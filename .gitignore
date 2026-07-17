@@ -1,0 +1,9 @@
+*.exe
+*.aps
+
+# Build folder
+build/
+build-web/
+
+# Data
+data/
