@@ -1,7 +1,13 @@
 #include "game.h"
 
 #include <algorithm>
+#include <cassert>
 
+
+Vector2 WorldPositionFromGridPosition(IVector2 gridPosition)
+{
+    return { static_cast<F32>(gridPosition.x) * static_cast<F32>(g_TileSize), static_cast<F32>(gridPosition.y) * static_cast<F32>(g_TileSize) };
+}
 
 void DrawTileMap(const TileMap& tileMap)
 {
@@ -9,20 +15,21 @@ void DrawTileMap(const TileMap& tileMap)
     {
         for (int row { 0 }; row < tileMap.count.x; row++)
         {
+            IVector2 gridPosition { column, row };
+            Vector2 position { WorldPositionFromGridPosition(gridPosition) };
             if (g_GameState.tileMap.tiles[column][row] == 0)
             {
                 continue;
             }
             else if(g_GameState.tileMap.tiles[column][row] == 1)
             {
-                DrawRectangle(column * 24, row * 24, 24, 24, WHITE);
+                DrawRectangle(position.x, position.y, tileMap.tileSize, tileMap.tileSize, WHITE);
             }
             else if (g_GameState.tileMap.tiles[column][row] == 2)
             {
-                DrawRectangle(column * 24, row * 24, 24, 24, BLUE);
-                DrawRectangleLines(column * 24, row * 24, 24, 24, BLACK);
+                DrawRectangle(position.x, position.y, tileMap.tileSize, tileMap.tileSize, BLUE);
+                DrawRectangleLines(position.x, position.y, tileMap.tileSize, tileMap.tileSize, BLACK);
             }
-            
         }
     }
 }
@@ -53,9 +60,75 @@ void DrawMenu()
 // NOTE:: Game
 //=================================================================
 
+Entity* EntityFromHandle(EntityHandle handle)
+{
+    Entity* entity { &g_GameState.entities[handle.index] };
+    if (entity->handle.id == handle.id)
+    {
+        return entity;
+    }
+
+    return nullptr;
+}
+
+void AddPlayer(GameState& g_GameState)
+{
+    Entity player;
+    player.direction = Direction::Down;
+    
+    player.handle.id = g_GameState.nextEntityId;
+    player.handle.index = 1;
+    player.gridPosition = { 7,7 };
+    player.position = WorldPositionFromGridPosition(player.gridPosition);
+
+    g_GameState.entities[g_GameState.nextEntityId++] = player;
+
+    g_GameState.playerHandle = player.handle;
+}
+
+void MovePlayer(Entity& player)
+{
+    if (IsKeyPressed(KEY_W))
+    {
+        player.gridPosition.y -= 1;
+    }
+
+    if (IsKeyPressed(KEY_A))
+    {
+        player.gridPosition.x -= 1;
+    }
+
+    if (IsKeyPressed(KEY_S))
+    {
+        player.gridPosition.y += 1;
+    }
+
+    if (IsKeyPressed(KEY_D))
+    {
+        player.gridPosition.x += 1;
+    }
+
+    player.position = WorldPositionFromGridPosition(player.gridPosition);
+}
+
+void DrawPlayer(Entity& player)
+{
+    DrawRectangle(player.position.x, player.position.y, g_TileSize, g_TileSize, YELLOW);
+}
+
 void DrawGame()
 {
     DrawTileMap(g_GameState.tileMap);
+    Entity* player { EntityFromHandle(g_GameState.playerHandle) };
+    if (player)
+    {
+        DrawPlayer(*player);
+    }
+    else
+    {
+        assert(!player && "Player not found when drawing");
+    }
+    
 }
 
 namespace Game
@@ -65,6 +138,8 @@ namespace Game
         g_GameState.tileMap.count = { g_TileMapCountX, g_TileMapCountY };
         g_GameState.tileMap.tileSize = g_TileSize;
         g_GameState.tileMap.tiles = tiles;
+
+        AddPlayer(g_GameState);
     }
     
     static void Update(F32 dt)
@@ -72,6 +147,24 @@ namespace Game
         if (IsKeyPressed(KEY_ESCAPE))
         {
             ToggleMenu();
+        }
+
+        switch (g_ProgramMode)
+        {
+        case ProgramMode::Menu:
+        {
+
+        }
+        break;
+        case ProgramMode::Game:
+        {
+            Entity* player { EntityFromHandle(g_GameState.playerHandle) };
+            if (player)
+            {
+                MovePlayer(*player);
+            }
+        }
+        break;
         }
     }
 
