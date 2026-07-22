@@ -122,6 +122,8 @@ struct GameState
     U64 entityCount { 1 };
     EntityHandle playerHandle;
 
+    Direction tapBuffer { Direction::None };
+
     TileMap tileMap;
 };
 

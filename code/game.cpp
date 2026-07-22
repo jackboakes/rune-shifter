@@ -3,29 +3,34 @@
 #include <algorithm>
 #include <cassert>
 
-Vector2 Vector2FromDirection(Direction direction)
+IVector2 IVector2FromDirection(Direction direction)
 {
-    Vector2 directionVector { 0.0f,0.0f };
+    IVector2 directionVector { 0 , 0 };
     switch (direction)
     {
+    case Direction::None:
+    {
+        directionVector = { 0 , 0 };
+    }
+    break;
     case Direction::Up:
     {
-        directionVector = { 0.0f, -1.0f };
+        directionVector = { 0 , -1 };
     }
     break;
     case Direction::Down:
     {
-        directionVector = { 0.0f, 1.0f };
+        directionVector = { 0 , 1 };
     }
     break;
     case Direction::Left:
     {
-        directionVector = { -1.0f, 0.0f };
+        directionVector = { -1 , 0 };
     }
     break;
     case Direction::Right:
     {
-        directionVector = { 1.0f, 0.0f };
+        directionVector = { 1 , 0 };
     }
     break;
     }
@@ -128,28 +133,29 @@ void AddPlayer(GameState& gameState)
     gameState.playerHandle = player.handle;
 }
 
-void StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDirection, IVector2 gridMove)
+B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDirection, IVector2 gridMove)
 {
     Entity* entity { EntityFromHandle(gameState, playerHandle) };
     if (entity)
     {
-        // Block movement if already moving
-        if (entity->position != entity->targetPosition)
-        {
-            return;
-        }
-
         if (newDirection != Direction::None)
         {
             entity->direction = newDirection;
         }
 
-        entity->startPosition = entity->position;
-        entity->targetGridPosition.x =  entity->gridPosition.x + gridMove.x;
-        entity->targetGridPosition.y = entity->gridPosition.y + gridMove.y;
-        entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
-        entity->positionT = 0.0f;
+        B32 isMoving { entity->position != entity->targetPosition };
+        if (!isMoving)
+        {
+            entity->startPosition = entity->position;
+            entity->targetGridPosition.x = entity->gridPosition.x + gridMove.x;
+            entity->targetGridPosition.y = entity->gridPosition.y + gridMove.y;
+            entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
+            entity->positionT = 0.0f;
+
+            return true;
+        }
     }
+    return false;
 }
 
 void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
@@ -234,32 +240,39 @@ namespace Game
         break;
         case ProgramMode::Game:
         {
-            IVector2 gridMove { 0,0 };
+            Direction hold { Direction::None };
+
+            if (IsKeyDown(KEY_W)) hold = Direction::Up;
+            if (IsKeyDown(KEY_A)) hold = Direction::Left;
+            if (IsKeyDown(KEY_S)) hold = Direction::Down;
+            if (IsKeyDown(KEY_D)) hold = Direction::Right;
+
+            if (IsKeyPressed(KEY_W)) gameState.tapBuffer = Direction::Up;
+            if (IsKeyPressed(KEY_A)) gameState.tapBuffer = Direction::Left;
+            if (IsKeyPressed(KEY_S)) gameState.tapBuffer = Direction::Down;
+            if (IsKeyPressed(KEY_D)) gameState.tapBuffer = Direction::Right;
+
+            // NOTE:: Prioritise the tap buffer input otherwise fall back to the held input direction
             Direction direction { Direction::None };
-            if (IsKeyDown(KEY_W))
+            if (gameState.tapBuffer != Direction::None)
             {
-                gridMove.y -= 1;
-                direction = Direction::Up;
+                direction = gameState.tapBuffer;
             }
-            else if (IsKeyDown(KEY_A))
+            else
             {
-                gridMove.x -= 1;
-                direction = Direction::Left;
+                direction = hold;
             }
-            else if (IsKeyDown(KEY_S))
-            {
-                gridMove.y += 1;
-                direction = Direction::Down;
-            }
-            else if (IsKeyDown(KEY_D))
-            {
-                gridMove.x += 1;
-                direction = Direction::Right;
-            }
+
+            IVector2 gridMove { IVector2FromDirection(direction) };
 
             if (gridMove.x != 0 || gridMove.y != 0)
             {
-                StartMove(gameState, gameState.playerHandle, direction, gridMove);
+                B32 started { StartMove(gameState, gameState.playerHandle, direction, gridMove) };
+                if (started)
+                {
+                    gameState.tapBuffer = Direction::None;
+                }
+                
             }
             
             MovePlayer(gameState, gameState.playerHandle, dt);

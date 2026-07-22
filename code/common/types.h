@@ -19,6 +19,6 @@ using F64 = double;
 
 struct IVector2
 {
-    U32 x;
-    U32 y;
+    S32 x;
+    S32 y;
 };
