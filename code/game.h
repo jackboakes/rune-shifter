@@ -11,7 +11,7 @@ enum class ProgramMode
     Game,
     Menu
 };
-inline ProgramMode g_ProgramMode = ProgramMode::Game;
+inline ProgramMode g_ProgramMode { ProgramMode::Game };
 
 //=================================================================
 // NOTE:: Screen Globals
@@ -45,6 +45,7 @@ struct EntityHandle
 
 enum class Direction
 {
+    None = 0,
     Up,
     Down,
     Left,
@@ -54,11 +55,14 @@ enum class Direction
 struct Entity
 {
     EntityHandle handle;
-    EntityKind kind;
+    EntityKind kind { EntityKind::None };
 
     IVector2 gridPosition;
+    IVector2 targetGridPosition;
+    Vector2 startPosition;
     Vector2 position;
     Vector2 targetPosition;
+    F32 positionT { 0.0f };
 
     Vector2 velocity;
     F32 speed;
@@ -73,23 +77,30 @@ inline constexpr U32 g_TileMapCountX { 15 };
 inline constexpr U32 g_TileMapCountY { 15 };
 inline constexpr U32 g_TileSize { 24 };
 
+
+/*
+NOTE::
+0 = void
+1 = wall
+2 = floor
+*/
 inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
 {
-    {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-    {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
 
 struct TileMap
@@ -108,18 +119,16 @@ inline constexpr U32 g_MaxEntities { 256 };
 struct GameState
 {
     std::array<Entity, g_MaxEntities> entities;
-    U64 nextEntityId { 1 };
+    U64 entityCount { 1 };
     EntityHandle playerHandle;
 
     TileMap tileMap;
 };
 
-inline GameState g_GameState;
-
 namespace Game
 {
-    void Init();
-    static void Update(F32 dt);
-    static void DrawFrame();
-    void UpdateAndDrawFrame(F32 dt);
+    void Initialise(GameState& gameState);
+    static void Update(GameState& gameState, F32 dt);
+    static void DrawFrame(GameState& gameState);
+    void UpdateAndDrawFrame(GameState& gameState, F32 dt);
 }

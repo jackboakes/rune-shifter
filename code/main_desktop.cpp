@@ -13,7 +13,8 @@ int main()
     InitWindow(g_ScreenWidth, g_ScreenHeight, "Rune Shifter");
     SetWindowMinSize(720, 720);
 
-    Game::Init();
+    GameState gameState;
+    Game::Initialise(gameState);
 
     SetExitKey(KEY_NULL);
 
@@ -27,7 +28,7 @@ int main()
     {
         if (WindowShouldClose()) break;
         F32 dt { GetFrameTime() };
-        Game::UpdateAndDrawFrame(dt);
+        Game::UpdateAndDrawFrame(gameState, dt);
     }
 
     UnloadRenderTexture(g_Target);
