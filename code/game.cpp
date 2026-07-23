@@ -50,9 +50,9 @@ Vector2 WorldPositionFromGridPosition(IVector2 gridPosition)
 
 void DrawTileMap(const TileMap& tileMap)
 {
-    for (int row { 0 }; row < tileMap.count.y; row++)
+    for (S32 row { 0 }; row < tileMap.count.y; row++)
     {
-        for (int column { 0 }; column < tileMap.count.x; column++)
+        for (S32 column { 0 }; column < tileMap.count.x; column++)
         {
             IVector2 gridPosition { column, row };
             Vector2 position { WorldPositionFromGridPosition(gridPosition) };
@@ -143,6 +143,18 @@ void AddPlayer(GameState& gameState)
     gameState.playerHandle = entity.handle;
 }
 
+B32 IsGridMovePossible(const TileMap& tileMap, IVector2 gridPosition)
+{
+    B32 result { false };
+
+    if (tileMap.tiles[gridPosition.y][gridPosition.x] != 1)
+    {
+        result = true;
+    }
+
+    return result;
+}
+
 B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDirection, IVector2 gridMove)
 {
     B32 result { false };
@@ -158,12 +170,18 @@ B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDire
             }
 
             entity->startPosition = entity->position;
-            entity->targetGridPosition.x = entity->gridPosition.x + gridMove.x;
-            entity->targetGridPosition.y = entity->gridPosition.y + gridMove.y;
-            entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
-            entity->positionT = 0.0f;
+            IVector2 targetGridPosition;
+            targetGridPosition.x = entity->gridPosition.x + gridMove.x;
+            targetGridPosition.y = entity->gridPosition.y + gridMove.y;
 
-            result = true;
+            if (IsGridMovePossible(gameState.tileMap, targetGridPosition))
+            {
+                entity->targetGridPosition = targetGridPosition;
+                entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
+                entity->positionT = 0.0f;
+
+                result = true;
+            }
         }
     }
     return result;
@@ -171,7 +189,6 @@ B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDire
 
 void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
 {
-    // TODO:: check if grid move is possible
     Entity* player { EntityFromHandle(gameState, playerHandle) };
     if (player)
     {
@@ -196,12 +213,6 @@ void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
         else
         {
             player->position = Vector2Lerp(player->startPosition, player->targetPosition, player->positionT);
-        }
-
-        // TODO:: find a bettter palce to update animation
-        if (gameState.tick % player->animation.frameAdvancement == 0)
-        {
-            player->animation.currentFrame = (player->animation.currentFrame + 1) % player->animation.frameCount;
         }
     }
     else
@@ -234,6 +245,25 @@ void DrawPlayer(Entity& entity)
 
     DrawTextureRec(entity.texture, source, entity.position, WHITE);
 
+}
+
+void UpdateAnimation(GameState& gameState, EntityHandle entityHandle, B32 playAnimation)
+{
+    Entity* entity { EntityFromHandle(gameState, entityHandle) };
+    if (entity)
+    {
+        if (playAnimation)
+        {
+            if (gameState.tick % entity->animation.frameAdvancement == 0)
+            {
+                entity->animation.currentFrame = (entity->animation.currentFrame + 1) % entity->animation.frameCount;
+            }
+        }
+        else
+        {
+            entity->animation.currentFrame = 0;
+        }
+    }
 }
 
 void DrawGame(GameState& gameState)
@@ -315,6 +345,11 @@ namespace Game
             }
             
             MovePlayer(gameState, gameState.playerHandle, dt);
+            Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
+            B32 isMoving { player && player->position != player->targetPosition };
+            B32 queuedMovement { gameState.tapBuffer != Direction::None || hold != Direction::None };
+            B32 isAnimating { isMoving || queuedMovement };
+            UpdateAnimation(gameState, gameState.playerHandle, isAnimating);
         }
         break;
         }
