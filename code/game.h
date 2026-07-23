@@ -24,6 +24,41 @@ inline constexpr S32 g_RenderTextureHeight { 360 };
 inline RenderTexture2D g_Target = { 0 };
 
 //=================================================================
+// NOTE:: Sprite Animation
+//=================================================================
+
+struct SpriteAnimation
+{
+    /*
+    The number of animation frames in a sprite sheet row or column
+    */
+    U32 frameCount { 1 };
+    /*
+    The frame the animation is currently showing
+    */
+    U32 currentFrame { 0 };
+    /*
+    The vertical width of an individual animation frame
+    */
+    U32 frameWidth { 0 };
+    /*
+    The vertical height of an individual animation frame
+    */
+    U32 frameHeight { 0 };
+    /*
+    The amount of horizontal and vertical padding in a sprite sheet
+    */
+    U32 padding { 24 };
+    /*
+    The number of ticks that advance an animations frame.
+    1 means one animation frame per tick,
+    so at 60 ticks/sec that's 60 animation frames per second.
+    30 means 30 frames before a new animation frame.
+    */
+    U32 frameAdvancement { 1 };
+};
+
+//=================================================================
 // NOTE:: Entity
 //=================================================================
 
@@ -56,6 +91,9 @@ struct Entity
 {
     EntityHandle handle;
     EntityKind kind { EntityKind::None };
+
+    Texture texture;
+    SpriteAnimation animation;
 
     IVector2 gridPosition;
     IVector2 targetGridPosition;
@@ -118,6 +156,7 @@ inline constexpr U32 g_MaxEntities { 256 };
 
 struct GameState
 {
+    U64 tick;
     std::array<Entity, g_MaxEntities> entities;
     U64 entityCount { 1 };
     EntityHandle playerHandle;

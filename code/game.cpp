@@ -1,5 +1,9 @@
 #include "game.h"
+
 #include "raymath.h"
+
+#include "assets.h"
+
 #include <algorithm>
 #include <cassert>
 
@@ -118,44 +122,51 @@ EntityHandle AddEntity(GameState& gameState)
 void AddPlayer(GameState& gameState)
 {
     EntityHandle handle = AddEntity(gameState);
-    Entity player;
-    player.kind = EntityKind::Player;
-    player.direction = Direction::Down;
-    player.speed = 80.0f;
-    player.handle = handle;
-    player.gridPosition = { 7,7 };
-    player.targetGridPosition = player.gridPosition;
-    player.position = WorldPositionFromGridPosition(player.gridPosition);
-    player.targetPosition = player.position;
-    player.startPosition = player.position;
-    gameState.entities[handle.index] = player;
+    Entity entity;
+    entity.kind = EntityKind::Player;
+    entity.texture = Assets::GetSpriteSheet(SpriteId::Player);
+    entity.animation.frameCount = 4;
+    entity.animation.currentFrame = 0;
+    entity.animation.frameWidth = 24;
+    entity.animation.frameHeight = 24;
+    entity.animation.frameAdvancement = 6;
+    entity.direction = Direction::Down;
+    entity.speed = 80.0f;
+    entity.handle = handle;
+    entity.gridPosition = { 7,7 };
+    entity.targetGridPosition = entity.gridPosition;
+    entity.position = WorldPositionFromGridPosition(entity.gridPosition);
+    entity.targetPosition = entity.position;
+    entity.startPosition = entity.position;
+    gameState.entities[handle.index] = entity;
 
-    gameState.playerHandle = player.handle;
+    gameState.playerHandle = entity.handle;
 }
 
 B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDirection, IVector2 gridMove)
 {
+    B32 result { false };
     Entity* entity { EntityFromHandle(gameState, playerHandle) };
     if (entity)
     {
-        if (newDirection != Direction::None)
-        {
-            entity->direction = newDirection;
-        }
-
         B32 isMoving { entity->position != entity->targetPosition };
         if (!isMoving)
         {
+            if (newDirection != Direction::None)
+            {
+                entity->direction = newDirection;
+            }
+
             entity->startPosition = entity->position;
             entity->targetGridPosition.x = entity->gridPosition.x + gridMove.x;
             entity->targetGridPosition.y = entity->gridPosition.y + gridMove.y;
             entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
             entity->positionT = 0.0f;
 
-            return true;
+            result = true;
         }
     }
-    return false;
+    return result;
 }
 
 void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
@@ -186,6 +197,12 @@ void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
         {
             player->position = Vector2Lerp(player->startPosition, player->targetPosition, player->positionT);
         }
+
+        // TODO:: find a bettter palce to update animation
+        if (gameState.tick % player->animation.frameAdvancement == 0)
+        {
+            player->animation.currentFrame = (player->animation.currentFrame + 1) % player->animation.frameCount;
+        }
     }
     else
     {
@@ -193,9 +210,30 @@ void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
     }
 }
 
-void DrawPlayer(Entity& player)
+void DrawPlayer(Entity& entity)
 {
-    DrawRectangle(player.position.x, player.position.y, g_TileSize, g_TileSize, YELLOW);
+    U32 column { 0 };
+    switch (entity.direction)
+    {
+    case Direction::Right: column = 0; break;
+    case Direction::Up:    column = 1; break;
+    case Direction::Left:  column = 2; break;
+    case Direction::Down:  column = 3; break;
+    }
+
+    U32 row { entity.animation.currentFrame };
+    U32 padding { entity.animation.padding };
+    U32 width { entity.animation.frameWidth };
+    U32 height { entity.animation.frameHeight };
+
+    Rectangle source;
+    source.x = static_cast<F32>(padding + (column * (width + padding)));
+    source.y = static_cast<F32>(padding + (row * (height + padding)));
+    source.width = static_cast<F32>(width);
+    source.height = static_cast<F32>(height);
+
+    DrawTextureRec(entity.texture, source, entity.position, WHITE);
+
 }
 
 void DrawGame(GameState& gameState)
@@ -220,6 +258,8 @@ namespace Game
         gameState.tileMap.count = { g_TileMapCountX, g_TileMapCountY };
         gameState.tileMap.tileSize = g_TileSize;
         gameState.tileMap.tiles = tiles;
+
+        Assets::LoadAllSprites();
 
         AddPlayer(gameState);
     }
@@ -264,7 +304,6 @@ namespace Game
             }
 
             IVector2 gridMove { IVector2FromDirection(direction) };
-
             if (gridMove.x != 0 || gridMove.y != 0)
             {
                 B32 started { StartMove(gameState, gameState.playerHandle, direction, gridMove) };

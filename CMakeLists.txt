@@ -20,6 +20,8 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     code/game.cpp
     code/game.h
+	code/assets.cpp
+	code/assets.h
     code/common/types.h
 )
 

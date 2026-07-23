@@ -27,6 +27,7 @@ int main()
     while (1)
     {
         if (WindowShouldClose()) break;
+        gameState.tick++;
         F32 dt { GetFrameTime() };
         Game::UpdateAndDrawFrame(gameState, dt);
     }
