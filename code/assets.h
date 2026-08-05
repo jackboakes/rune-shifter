@@ -7,6 +7,7 @@
 enum class SpriteId
 {
     Player,
+    DefaultBlock,
     Count
 };
 

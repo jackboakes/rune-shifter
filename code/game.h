@@ -56,6 +56,10 @@ struct SpriteAnimation
     30 means 30 frames before a new animation frame.
     */
     U32 frameAdvancement { 1 };
+    /*
+    Defines which row the animation is playing
+    */
+    U32 row { 0 };
 };
 
 //=================================================================
@@ -92,6 +96,8 @@ struct Entity
     EntityHandle handle;
     EntityKind kind { EntityKind::None };
 
+    B32 pushed;
+
     Texture texture;
     SpriteAnimation animation;
 
@@ -102,7 +108,6 @@ struct Entity
     Vector2 targetPosition;
     F32 positionT { 0.0f };
 
-    Vector2 velocity;
     F32 speed;
     Direction direction;
 };

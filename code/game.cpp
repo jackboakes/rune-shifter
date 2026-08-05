@@ -110,6 +110,22 @@ Entity* EntityFromHandle(GameState& gameState, EntityHandle handle)
     return nullptr;
 }
 
+Entity* EntityFromGridPosition(GameState& gameState, EntityKind kind, IVector2 gridPosition)
+{
+    Entity* entity { nullptr };
+    for (Entity& e : gameState.entities)
+    {
+        if (e.kind != kind) continue;
+        if (e.gridPosition.x == gridPosition.x && e.gridPosition.y == gridPosition.y)
+        {
+            entity = &e;
+            break;
+        }
+    }
+
+    return entity;
+}
+
 EntityHandle AddEntity(GameState& gameState)
 {
     U64 entityIndex { gameState.entityCount++ };
@@ -122,6 +138,7 @@ EntityHandle AddEntity(GameState& gameState)
 void AddPlayer(GameState& gameState)
 {
     EntityHandle handle = AddEntity(gameState);
+
     Entity entity;
     entity.kind = EntityKind::Player;
     entity.texture = Assets::GetSpriteSheet(SpriteId::Player);
@@ -143,13 +160,50 @@ void AddPlayer(GameState& gameState)
     gameState.playerHandle = entity.handle;
 }
 
-B32 IsGridMovePossible(const TileMap& tileMap, IVector2 gridPosition)
+void AddBlock(GameState& gameState)
+{
+    EntityHandle handle = AddEntity(gameState);
+
+    Entity entity;
+    entity.kind = EntityKind::Block;
+    entity.pushed = false;
+    entity.texture = Assets::GetSpriteSheet(SpriteId::DefaultBlock);
+    entity.animation.frameCount = 0;
+    entity.animation.currentFrame = 0;
+    entity.animation.frameWidth = 24;
+    entity.animation.frameHeight = 24;
+    entity.animation.frameAdvancement = 0;
+    entity.speed = 360.0f;
+    entity.handle = handle;
+    entity.gridPosition = { 7,9 };
+    entity.targetGridPosition = entity.gridPosition;
+    entity.position = WorldPositionFromGridPosition(entity.gridPosition);
+    entity.targetPosition = entity.position;
+    entity.startPosition = entity.position;
+    gameState.entities[handle.index] = entity;
+}
+
+B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targetGridPosition)
 {
     B32 result { false };
 
-    if (tileMap.tiles[gridPosition.y][gridPosition.x] != 1)
+    if (gameState.tileMap.tiles[targetGridPosition.y][targetGridPosition.x] != 1)
     {
         result = true;
+    }
+
+    for (const auto& e : gameState.entities)
+    {
+        if (e.kind == EntityKind::None) continue;
+        if (e.handle.id == entity.handle.id) continue;
+
+        // NOTE:: Check against both current and target grid positions to account for entities mid-move
+        if ((e.gridPosition.x == targetGridPosition.x && e.gridPosition.y == targetGridPosition.y) ||
+            (e.targetGridPosition.x == targetGridPosition.x && e.targetGridPosition.y == targetGridPosition.y))
+        {
+            result = false;
+            break;
+        }
     }
 
     return result;
@@ -167,84 +221,59 @@ B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDire
             if (newDirection != Direction::None)
             {
                 entity->direction = newDirection;
+
+                // NOTE:: Only update animation row for entities with directional sprite sheets
+                if (entity->animation.frameCount > 0)
+                {
+                    switch (newDirection)
+                    {
+                    case Direction::Down:  entity->animation.row = 0; break;
+                    case Direction::Up:    entity->animation.row = 1; break;
+                    case Direction::Left:  entity->animation.row = 2; break;
+                    case Direction::Right: entity->animation.row = 3; break;
+                    default: break;
+                    }
+                }
             }
 
-            entity->startPosition = entity->position;
-            IVector2 targetGridPosition;
-            targetGridPosition.x = entity->gridPosition.x + gridMove.x;
-            targetGridPosition.y = entity->gridPosition.y + gridMove.y;
-
-            if (IsGridMovePossible(gameState.tileMap, targetGridPosition))
+            IVector2 targetGridPosition { entity->gridPosition.x + gridMove.x, entity->gridPosition.y + gridMove.y };
+            if (IsGridMovePossible(gameState, *entity, targetGridPosition))
             {
+                entity->startPosition = entity->position;
                 entity->targetGridPosition = targetGridPosition;
                 entity->targetPosition = WorldPositionFromGridPosition(entity->targetGridPosition);
                 entity->positionT = 0.0f;
-
-                result = true;
             }
+            // NOTE:: The input is consumed even if the grid move is blocked
+            result = true;
         }
     }
     return result;
 }
 
-void MovePlayer(GameState& gameState, EntityHandle playerHandle, F32 dt)
+void UpdateEntityMovement(Entity& entity, F32 dt)
 {
-    Entity* player { EntityFromHandle(gameState, playerHandle) };
-    if (player)
+
+    F32 distance { Vector2Length(entity.targetPosition - entity.startPosition) };
+    if (distance <= 0.0f)
     {
-        F32 distance { Vector2Length(player->targetPosition - player->startPosition) };
-        if (distance <= 0.0f)
-        {
-            return;
-        }
-        player->positionT += (player->speed * dt) / distance;
-
-        if (player->positionT >= 0.5f)
-        {
-            player->gridPosition = player->targetGridPosition;
-        }
-
-        if (player->positionT >= 1.0f)
-        {
-            player->positionT = 1.0f;
-            player->position = player->targetPosition;
-            player->gridPosition = player->targetGridPosition;
-        }
-        else
-        {
-            player->position = Vector2Lerp(player->startPosition, player->targetPosition, player->positionT);
-        }
+        return;
+    }
+    entity.positionT += (entity.speed * dt) / distance;
+    if (entity.positionT >= 0.5f)
+    {
+        entity.gridPosition = entity.targetGridPosition;
+    }
+    if (entity.positionT >= 1.0f)
+    {
+        entity.positionT = 1.0f;
+        entity.position = entity.targetPosition;
+        entity.gridPosition = entity.targetGridPosition;
     }
     else
     {
-        assert(player && "Player not found when moving");
+        entity.position = Vector2Lerp(entity.startPosition, entity.targetPosition, entity.positionT);
     }
-}
-
-void DrawPlayer(Entity& entity)
-{
-    U32 column { 0 };
-    switch (entity.direction)
-    {
-    case Direction::Right: column = 0; break;
-    case Direction::Up:    column = 1; break;
-    case Direction::Left:  column = 2; break;
-    case Direction::Down:  column = 3; break;
-    }
-
-    U32 row { entity.animation.currentFrame };
-    U32 padding { entity.animation.padding };
-    U32 width { entity.animation.frameWidth };
-    U32 height { entity.animation.frameHeight };
-
-    Rectangle source;
-    source.x = static_cast<F32>(padding + (column * (width + padding)));
-    source.y = static_cast<F32>(padding + (row * (height + padding)));
-    source.width = static_cast<F32>(width);
-    source.height = static_cast<F32>(height);
-
-    DrawTextureRec(entity.texture, source, entity.position, WHITE);
-
 }
 
 void UpdateAnimation(GameState& gameState, EntityHandle entityHandle, B32 playAnimation)
@@ -266,19 +295,31 @@ void UpdateAnimation(GameState& gameState, EntityHandle entityHandle, B32 playAn
     }
 }
 
+void DrawEntity(const Entity& entity)
+{
+    const SpriteAnimation& animation { entity.animation };
+
+    Rectangle source
+    {
+        static_cast<F32>(animation.padding + animation.currentFrame * (animation.frameWidth + animation.padding)),
+        static_cast<F32>(animation.padding + animation.row * (animation.frameHeight + animation.padding)),
+        static_cast<F32>(animation.frameWidth),
+        static_cast<F32>(animation.frameHeight)
+    };
+
+    DrawTextureRec(entity.texture, source, entity.position, WHITE);
+}
+
 void DrawGame(GameState& gameState)
 {
     DrawTileMap(gameState.tileMap);
-    Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
-    if (player)
+
+    for (const auto& entity : gameState.entities)
     {
-        DrawPlayer(*player);
+        if (entity.kind == EntityKind::None) continue;
+
+        DrawEntity(entity);
     }
-    else
-    {
-        assert(!player && "Player not found when drawing");
-    }
-    
 }
 
 namespace Game
@@ -292,6 +333,7 @@ namespace Game
         Assets::LoadAllSprites();
 
         AddPlayer(gameState);
+        AddBlock(gameState);
     }
     
     static void Update(GameState& gameState, F32 dt)
@@ -341,11 +383,50 @@ namespace Game
                 {
                     gameState.tapBuffer = Direction::None;
                 }
-                
             }
-            
-            MovePlayer(gameState, gameState.playerHandle, dt);
+
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
+                IVector2 facingGridPosition { IVector2FromDirection(player->direction) };
+                IVector2 targetGridPosition { player->gridPosition.x + facingGridPosition.x, player->gridPosition.y + facingGridPosition.y };
+                Entity* target { EntityFromGridPosition(gameState, EntityKind::Block, targetGridPosition) };
+                if (target)
+                {
+                    IVector2 blockTargetGridPosition { target->gridPosition.x + facingGridPosition.x, target->gridPosition.y + facingGridPosition.y };
+                    if (IsGridMovePossible(gameState, *target, blockTargetGridPosition))
+                    {
+                        target->pushed = true;
+                        StartMove(gameState, target->handle, player->direction, facingGridPosition);
+                    }
+                }
+            }
+
+            for (auto& entity : gameState.entities)
+            {
+                if (entity.kind != EntityKind::Block) continue;
+                if (entity.pushed)
+                {
+                    UpdateEntityMovement(entity, dt);
+                    // NOTE:: when a movement step is complete start a new one if possible
+                    if (entity.positionT >= 1.0f)
+                    {
+                        IVector2 nextMove { IVector2FromDirection(entity.direction) };
+                        IVector2 nextGridPosition { entity.gridPosition.x + nextMove.x, entity.gridPosition.y + nextMove.y };
+                        if (IsGridMovePossible(gameState, entity, nextGridPosition))
+                        {
+                            StartMove(gameState, entity.handle, entity.direction, nextMove);
+                        }
+                        else
+                        {
+                            entity.pushed = false;
+                        }
+                    }
+                }
+            }
+
             Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
+            UpdateEntityMovement(*player, dt);
             B32 isMoving { player && player->position != player->targetPosition };
             B32 queuedMovement { gameState.tapBuffer != Direction::None || hold != Direction::None };
             B32 isAnimating { isMoving || queuedMovement };
