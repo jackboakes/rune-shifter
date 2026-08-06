@@ -137,7 +137,7 @@ EntityHandle AddEntity(GameState& gameState)
 
 void AddPlayer(GameState& gameState)
 {
-    EntityHandle handle = AddEntity(gameState);
+    EntityHandle handle { AddEntity(gameState) };
 
     Entity entity;
     entity.kind = EntityKind::Player;
@@ -162,7 +162,7 @@ void AddPlayer(GameState& gameState)
 
 void AddBlock(GameState& gameState, BlockKind blockKind, IVector2 gridPosition)
 {
-    EntityHandle handle = AddEntity(gameState);
+    EntityHandle handle { AddEntity(gameState) };
 
     Texture texture;
 
@@ -211,9 +211,9 @@ void AddBlock(GameState& gameState, BlockKind blockKind, IVector2 gridPosition)
     gameState.entities[handle.index] = entity;
 }
 
-EntityHandle AddEffect(GameState& gameState, SpriteId spriteId, Vector2 worldPosition, U32 frameCount, U32 frameAdvancement)
+void AddEffect(GameState& gameState, SpriteId spriteId, Vector2 worldPosition, U32 frameCount, U32 frameAdvancement)
 {
-    EntityHandle handle = AddEntity(gameState);
+    EntityHandle handle { AddEntity(gameState) };
 
     Entity entity;
     entity.handle = handle;
@@ -229,7 +229,28 @@ EntityHandle AddEffect(GameState& gameState, SpriteId spriteId, Vector2 worldPos
     entity.animation.row = 0;
 
     gameState.entities[handle.index] = entity;
-    return handle;
+}
+
+void AddEnemy(GameState& gameState, IVector2 gridPosition)
+{
+    EntityHandle handle { AddEntity(gameState) };
+
+    Entity entity;
+    entity.handle = handle;
+    entity.kind = EntityKind::Enemy;
+    entity.texture = Assets::GetSpriteSheet(SpriteId::Jelly);
+    entity.animation.frameCount = 5;
+    entity.animation.currentFrame = 0;
+    entity.animation.frameWidth = 24;
+    entity.animation.frameHeight = 24;
+    entity.animation.frameAdvancement = 8;
+    entity.speed = 80.0f;
+    entity.gridPosition = gridPosition;
+    entity.targetGridPosition = entity.gridPosition;
+    entity.position = WorldPositionFromGridPosition(entity.gridPosition);
+    entity.targetPosition = entity.position;
+    entity.startPosition = entity.position;
+    gameState.entities[handle.index] = entity;
 }
 
 B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targetGridPosition)
@@ -244,6 +265,8 @@ B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targ
     for (const auto& e : gameState.entities)
     {
         if (e.kind == EntityKind::None) continue;
+        if (e.kind == EntityKind::Effect) continue;
+        if (e.kind == EntityKind::Enemy) continue;
         if (e.handle.id == entity.handle.id) continue;
 
         // NOTE:: Check against both current and target grid positions to account for entities mid-move
@@ -385,7 +408,8 @@ namespace Game
         Assets::LoadAllSprites();
 
         AddPlayer(gameState);
-        AddBlock(gameState, BlockKind::FrozenEnemy, { 7,9 });
+        AddEnemy(gameState, { 7,11 });
+        AddBlock(gameState, BlockKind::Default, { 7,9 });
     }
     
     static void Update(GameState& gameState, F32 dt)
@@ -487,6 +511,7 @@ namespace Game
                         {
                             entity.pushed = false;
                         }
+                        
                     }
                 }
             }
@@ -497,6 +522,47 @@ namespace Game
             B32 queuedMovement { gameState.tapBuffer != Direction::None || hold != Direction::None };
             B32 isAnimating { isMoving || queuedMovement };
             UpdateAnimation(gameState, gameState.playerHandle, isAnimating);
+
+            for (auto& iceBlock : gameState.entities)
+            {
+                if (iceBlock.kind != EntityKind::Block) continue;
+                if (iceBlock.blockKind != BlockKind::Ice) continue;
+                if (!iceBlock.pushed) continue;
+
+                Rectangle iceBlockBounds { iceBlock.position.x, iceBlock.position.y, 24.0f, 24.0f };
+
+                for (auto& enemy : gameState.entities)
+                {
+                    if (enemy.kind != EntityKind::Enemy) continue;
+                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, 24.0f, 24.0f };
+                    if (CheckCollisionRecs(iceBlockBounds, enemyBounds))
+                    {
+                        AddBlock(gameState, BlockKind::FrozenEnemy, enemy.gridPosition);
+                        enemy.kind = EntityKind::None;
+                        iceBlock.kind = EntityKind::None;
+                        break;
+                    }
+                }
+            }
+
+            for (auto& block : gameState.entities)
+            {
+                if (block.kind != EntityKind::Block) continue;
+                if (block.blockKind == BlockKind::FrozenEnemy) continue;
+                if (!block.pushed) continue;
+
+                Rectangle blockBounds { block.position.x, block.position.y, 24.0f, 24.0f };
+                for (auto& enemy : gameState.entities)
+                {
+                    if (enemy.kind != EntityKind::Enemy) continue;
+                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, 24.0f, 24.0f };
+                    if (CheckCollisionRecs(blockBounds, enemyBounds))
+                    {
+                        AddEffect(gameState, SpriteId::JellyDeathEffect, enemy.position, 3, 8);
+                        enemy.kind = EntityKind::None;
+                    }
+                }
+            }
 
             for (auto& entity : gameState.entities)
             {
@@ -516,11 +582,10 @@ namespace Game
 
             for (auto& entity : gameState.entities)
             {
-                if (entity.blockKind == BlockKind::FrozenEnemy)
+                if (entity.blockKind == BlockKind::FrozenEnemy || entity.kind == EntityKind::Enemy)
                 {
                     UpdateAnimation(gameState, entity.handle, true);
                 }
-
             }
         }
         break;
