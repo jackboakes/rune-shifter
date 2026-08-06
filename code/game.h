@@ -92,10 +92,20 @@ enum class Direction
     Right
 };
 
+enum class BlockKind
+{
+    None = 0,
+    Default,
+    Fire,
+    Ice,
+    FrozenEnemy
+};
+
 struct Entity
 {
     EntityHandle handle;
     EntityKind kind { EntityKind::None };
+    BlockKind blockKind { BlockKind::None };
 
     B32 pushed;
 

@@ -160,23 +160,50 @@ void AddPlayer(GameState& gameState)
     gameState.playerHandle = entity.handle;
 }
 
-void AddBlock(GameState& gameState)
+void AddBlock(GameState& gameState, BlockKind blockKind, IVector2 gridPosition)
 {
     EntityHandle handle = AddEntity(gameState);
+
+    Texture texture;
+
+    switch (blockKind)
+    {
+    case BlockKind::Default:
+    {
+        texture = Assets::GetSpriteSheet(SpriteId::DefaultBlock);
+    }
+    break;
+    case BlockKind::Fire:
+    {
+        texture = Assets::GetSpriteSheet(SpriteId::FireBlock);
+    }
+    break;
+    case BlockKind::Ice:
+    {
+        texture = Assets::GetSpriteSheet(SpriteId::IceBlock);
+    }
+    break;
+    case BlockKind::FrozenEnemy:
+    {
+        texture = Assets::GetSpriteSheet(SpriteId::JellyBlock);
+    }
+    break;
+    }
 
     Entity entity;
     entity.handle = handle;
     entity.kind = EntityKind::Block;
+    entity.blockKind = blockKind;
     entity.pushed = false;
-    entity.texture = Assets::GetSpriteSheet(SpriteId::DefaultBlock);
-    entity.animation.frameCount = 0;
+    entity.texture = texture;
+    entity.animation.frameCount = 6;
     entity.animation.currentFrame = 0;
     entity.animation.frameWidth = 24;
     entity.animation.frameHeight = 24;
-    entity.animation.frameAdvancement = 0;
+    entity.animation.frameAdvancement = 8;
     entity.speed = 360.0f;
 
-    entity.gridPosition = { 7,9 };
+    entity.gridPosition = gridPosition;
     entity.targetGridPosition = entity.gridPosition;
     entity.position = WorldPositionFromGridPosition(entity.gridPosition);
     entity.targetPosition = entity.position;
@@ -245,7 +272,7 @@ B32 StartMove(GameState& gameState, EntityHandle playerHandle, Direction newDire
                 entity->direction = newDirection;
 
                 // NOTE:: Only update animation row for entities with directional sprite sheets
-                if (entity->animation.frameCount > 0)
+                if (entity->kind == EntityKind::Player)
                 {
                     switch (newDirection)
                     {
@@ -358,7 +385,7 @@ namespace Game
         Assets::LoadAllSprites();
 
         AddPlayer(gameState);
-        AddBlock(gameState);
+        AddBlock(gameState, BlockKind::FrozenEnemy, { 7,9 });
     }
     
     static void Update(GameState& gameState, F32 dt)
@@ -427,8 +454,16 @@ namespace Game
                     else
                     {
                         // Block gets crushed
-                        AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
-                        target->kind = EntityKind::None;
+                        if (target->blockKind == BlockKind::Default)
+                        {
+                            AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
+                            target->kind = EntityKind::None;
+                        }
+                        else if (target->blockKind == BlockKind::FrozenEnemy)
+                        {
+                            AddEffect(gameState, SpriteId::JellyDeathEffect, target->position, 3, 8);
+                            target->kind = EntityKind::None;
+                        }
                     }
                 }
             }
@@ -465,17 +500,27 @@ namespace Game
 
             for (auto& entity : gameState.entities)
             {
-                if (entity.kind != EntityKind::Effect) continue;
-
-                if (gameState.tick % entity.animation.frameAdvancement == 0)
+                if (entity.kind == EntityKind::Effect)
                 {
-                    entity.animation.currentFrame++;
-                    // Despawn after playing all frames once
-                    if (entity.animation.currentFrame >= entity.animation.frameCount)
+                    if (gameState.tick % entity.animation.frameAdvancement == 0)
                     {
-                        entity.kind = EntityKind::None; // Free the slot
+                        entity.animation.currentFrame++;
+                        // Despawn after playing all frames once
+                        if (entity.animation.currentFrame >= entity.animation.frameCount)
+                        {
+                            entity.kind = EntityKind::None; // Free the slot
+                        }
                     }
                 }
+            }
+
+            for (auto& entity : gameState.entities)
+            {
+                if (entity.blockKind == BlockKind::FrozenEnemy)
+                {
+                    UpdateAnimation(gameState, entity.handle, true);
+                }
+
             }
         }
         break;

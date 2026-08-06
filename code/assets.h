@@ -2,12 +2,16 @@
 #include "raylib.h"
 
 #include <array>
-#include <cassert>
 
 enum class SpriteId
 {
     Player,
     DefaultBlock,
+    FireBlock,
+    IceBlock,
+    JellyBlock,
+    Jelly,
+    JellyDeathEffect,
     BlockCrushEffect,
     Count
 };
