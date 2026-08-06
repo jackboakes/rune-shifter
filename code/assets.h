@@ -8,6 +8,7 @@ enum class SpriteId
 {
     Player,
     DefaultBlock,
+    BlockCrushEffect,
     Count
 };
 

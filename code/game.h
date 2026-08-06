@@ -73,7 +73,8 @@ enum class EntityKind
     Block,
     Fire,
     Wall,
-    Enemy
+    Enemy,
+    Effect
 };
 
 struct EntityHandle

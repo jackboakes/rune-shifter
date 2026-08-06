@@ -165,6 +165,7 @@ void AddBlock(GameState& gameState)
     EntityHandle handle = AddEntity(gameState);
 
     Entity entity;
+    entity.handle = handle;
     entity.kind = EntityKind::Block;
     entity.pushed = false;
     entity.texture = Assets::GetSpriteSheet(SpriteId::DefaultBlock);
@@ -174,13 +175,34 @@ void AddBlock(GameState& gameState)
     entity.animation.frameHeight = 24;
     entity.animation.frameAdvancement = 0;
     entity.speed = 360.0f;
-    entity.handle = handle;
+
     entity.gridPosition = { 7,9 };
     entity.targetGridPosition = entity.gridPosition;
     entity.position = WorldPositionFromGridPosition(entity.gridPosition);
     entity.targetPosition = entity.position;
     entity.startPosition = entity.position;
     gameState.entities[handle.index] = entity;
+}
+
+EntityHandle AddEffect(GameState& gameState, SpriteId spriteId, Vector2 worldPosition, U32 frameCount, U32 frameAdvancement)
+{
+    EntityHandle handle = AddEntity(gameState);
+
+    Entity entity;
+    entity.handle = handle;
+    entity.kind = EntityKind::Effect;
+    entity.texture = Assets::GetSpriteSheet(spriteId);
+    entity.position = worldPosition;
+
+    entity.animation.frameCount = frameCount;
+    entity.animation.currentFrame = 0;
+    entity.animation.frameWidth = 24;
+    entity.animation.frameHeight = 24;
+    entity.animation.frameAdvancement = frameAdvancement;
+    entity.animation.row = 0;
+
+    gameState.entities[handle.index] = entity;
+    return handle;
 }
 
 B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targetGridPosition)
@@ -317,9 +339,12 @@ void DrawGame(GameState& gameState)
     for (const auto& entity : gameState.entities)
     {
         if (entity.kind == EntityKind::None) continue;
-
+        if (entity.kind == EntityKind::Player) continue;
         DrawEntity(entity);
     }
+
+    Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
+    DrawEntity(*player);
 }
 
 namespace Game
@@ -399,6 +424,12 @@ namespace Game
                         target->pushed = true;
                         StartMove(gameState, target->handle, player->direction, facingGridPosition);
                     }
+                    else
+                    {
+                        // Block gets crushed
+                        AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
+                        target->kind = EntityKind::None;
+                    }
                 }
             }
 
@@ -431,6 +462,21 @@ namespace Game
             B32 queuedMovement { gameState.tapBuffer != Direction::None || hold != Direction::None };
             B32 isAnimating { isMoving || queuedMovement };
             UpdateAnimation(gameState, gameState.playerHandle, isAnimating);
+
+            for (auto& entity : gameState.entities)
+            {
+                if (entity.kind != EntityKind::Effect) continue;
+
+                if (gameState.tick % entity.animation.frameAdvancement == 0)
+                {
+                    entity.animation.currentFrame++;
+                    // Despawn after playing all frames once
+                    if (entity.animation.currentFrame >= entity.animation.frameCount)
+                    {
+                        entity.kind = EntityKind::None; // Free the slot
+                    }
+                }
+            }
         }
         break;
         }

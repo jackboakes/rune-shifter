@@ -6,6 +6,7 @@ namespace Assets
     {
         spriteTextures[static_cast<size_t>(SpriteId::Player)] = LoadTexture("../data/textures/player_spritesheet.png");
         spriteTextures[static_cast<size_t>(SpriteId::DefaultBlock)] = LoadTexture("../data/textures/default_block.png");
+        spriteTextures[static_cast<size_t>(SpriteId::BlockCrushEffect)] = LoadTexture("../data/textures/block_crush_effect.png");
     }
 
     Texture GetSpriteSheet(SpriteId id)
