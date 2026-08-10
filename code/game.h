@@ -177,6 +177,9 @@ struct GameState
     U64 entityCount { 1 };
     EntityHandle playerHandle;
 
+    S32 lives { 3 };
+    F32 invincibilityT { 0.0f };
+
     Direction tapBuffer { Direction::None };
 
     TileMap tileMap;

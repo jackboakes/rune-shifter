@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 IVector2 IVector2FromDirection(Direction direction)
 {
@@ -386,6 +387,19 @@ void DrawGame(GameState& gameState)
 {
     DrawTileMap(gameState.tileMap);
 
+    // Draw lives
+    {
+        U32 xOffset { g_TileSize - 2 };
+        U32 yOffset { g_TileSize };
+        U32 padding { 2 };
+        Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
+        U32 stepX { lifeSprite.width + padding };
+        for (int i { 0 }; i < gameState.lives; i++)
+        {
+            DrawTexture(lifeSprite, xOffset + i * stepX, yOffset, WHITE);
+        }
+    }
+
     for (const auto& entity : gameState.entities)
     {
         if (entity.kind == EntityKind::None) continue;
@@ -394,7 +408,29 @@ void DrawGame(GameState& gameState)
     }
 
     Entity* player { EntityFromHandle(gameState, gameState.playerHandle) };
-    DrawEntity(*player);
+    if (player)
+    {
+        const SpriteAnimation& animation { player->animation };
+
+        Rectangle source
+        {
+            static_cast<F32>(animation.padding + animation.currentFrame * (animation.frameWidth + animation.padding)),
+            static_cast<F32>(animation.padding + animation.row * (animation.frameHeight + animation.padding)),
+            static_cast<F32>(animation.frameWidth),
+            static_cast<F32>(animation.frameHeight)
+        };
+
+        B32 isInvincible { gameState.invincibilityT > 0.0f && std::fmod(gameState.invincibilityT, 0.1f * 2.0f) >= 0.1f };
+
+        if (isInvincible)
+        {
+            DrawTextureRec(player->texture, source, player->position, { 255, 255,255, 125 });
+        }
+        else
+        {
+            DrawTextureRec(player->texture, source, player->position, WHITE);
+        }
+    }
 }
 
 namespace Game
@@ -523,18 +559,48 @@ namespace Game
             B32 isAnimating { isMoving || queuedMovement };
             UpdateAnimation(gameState, gameState.playerHandle, isAnimating);
 
+            if (player)
+            {
+                Rectangle playerBounds { player->position.x, player->position.y, g_TileSize, g_TileSize };
+                for (const auto& enemy : gameState.entities)
+                {
+                    if (enemy.kind == EntityKind::Enemy)
+                    {
+                        Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
+                        if (CheckCollisionRecs(playerBounds, enemyBounds))
+                        {
+                            if (gameState.invincibilityT <= 0.0f)
+                            {
+                                gameState.lives--;
+                                gameState.lives = std::clamp(gameState.lives, 0, 3);
+                                gameState.invincibilityT = 1.5f;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (gameState.invincibilityT > 0.0f)
+            {
+                gameState.invincibilityT -= dt;
+                if (gameState.invincibilityT < 0.0f)
+                {
+                    gameState.invincibilityT = 0.0f;
+                }
+            }
+
             for (auto& iceBlock : gameState.entities)
             {
                 if (iceBlock.kind != EntityKind::Block) continue;
                 if (iceBlock.blockKind != BlockKind::Ice) continue;
                 if (!iceBlock.pushed) continue;
 
-                Rectangle iceBlockBounds { iceBlock.position.x, iceBlock.position.y, 24.0f, 24.0f };
+                Rectangle iceBlockBounds { iceBlock.position.x, iceBlock.position.y, g_TileSize, g_TileSize };
 
                 for (auto& enemy : gameState.entities)
                 {
                     if (enemy.kind != EntityKind::Enemy) continue;
-                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, 24.0f, 24.0f };
+                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
                     if (CheckCollisionRecs(iceBlockBounds, enemyBounds))
                     {
                         AddBlock(gameState, BlockKind::FrozenEnemy, enemy.gridPosition);
@@ -551,11 +617,11 @@ namespace Game
                 if (block.blockKind == BlockKind::FrozenEnemy) continue;
                 if (!block.pushed) continue;
 
-                Rectangle blockBounds { block.position.x, block.position.y, 24.0f, 24.0f };
+                Rectangle blockBounds { block.position.x, block.position.y, g_TileSize, g_TileSize };
                 for (auto& enemy : gameState.entities)
                 {
                     if (enemy.kind != EntityKind::Enemy) continue;
-                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, 24.0f, 24.0f };
+                    Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
                     if (CheckCollisionRecs(blockBounds, enemyBounds))
                     {
                         AddEffect(gameState, SpriteId::JellyDeathEffect, enemy.position, 3, 8);

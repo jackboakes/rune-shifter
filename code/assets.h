@@ -13,6 +13,7 @@ enum class SpriteId
     Jelly,
     JellyDeathEffect,
     BlockCrushEffect,
+    Life,
     Count
 };
 

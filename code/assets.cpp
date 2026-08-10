@@ -12,6 +12,7 @@ namespace Assets
         spriteTextures[static_cast<size_t>(SpriteId::Jelly)] = LoadTexture("../data/textures/jelly.png");
         spriteTextures[static_cast<size_t>(SpriteId::JellyDeathEffect)] = LoadTexture("../data/textures/jelly_death_effect.png");
         spriteTextures[static_cast<size_t>(SpriteId::BlockCrushEffect)] = LoadTexture("../data/textures/block_crush_effect.png");
+        spriteTextures[static_cast<size_t>(SpriteId::Life)] = LoadTexture("../data/textures/life.png");
     }
 
     Texture GetSpriteSheet(SpriteId id)
