@@ -49,27 +49,45 @@ Vector2 WorldPositionFromGridPosition(IVector2 gridPosition)
     return { static_cast<F32>(gridPosition.x) * static_cast<F32>(g_TileSize), static_cast<F32>(gridPosition.y) * static_cast<F32>(g_TileSize) };
 }
 
+F32 GetDeterministicRotation(IVector2 position)
+{
+    U32 hash { (static_cast<U32>(position.x) * 73856093u) ^ (static_cast<U32>(position.y) * 19349663u) };
+
+    return static_cast<float>((hash % 4)) * 90.0f;
+}
+
+void DrawRotatedTile(Texture texture, Rectangle sourceRec, Vector2 position, F32 tileSize, F32 rotationDegrees)
+{
+    Rectangle destRectangle { position.x + tileSize * 0.5f, position.y + tileSize * 0.5f, tileSize, tileSize };
+    Vector2 origin { tileSize * 0.5f, tileSize * 0.5f };
+    DrawTexturePro(texture, sourceRec, destRectangle, origin, rotationDegrees, WHITE);
+}
+
 void DrawTileMap(const TileMap& tileMap)
 {
+    Texture tileBorderSheet { Assets::GetSpriteSheet(SpriteId::TileBorder) };
+    const F32 size = static_cast<F32>(tileMap.tileSize);
+
     for (S32 row { 0 }; row < tileMap.count.y; row++)
     {
         for (S32 column { 0 }; column < tileMap.count.x; column++)
         {
-            IVector2 gridPosition { column, row };
-            Vector2 position { WorldPositionFromGridPosition(gridPosition) };
-            if (tileMap.tiles[row][column] == 0)
+            U32 tileType { tileMap.tiles[row][column] };
+            if (tileType == 0) continue;
+
+            Vector2 position { WorldPositionFromGridPosition({ column, row }) };
+            IVector2 gridPosition { row, column };
+            if (tileType == 2)
             {
+                F32 rotation { GetDeterministicRotation(gridPosition) };
+                DrawRotatedTile(Assets::GetSpriteSheet(SpriteId::Tile), {0.0f, 0.0f, g_TileSize, g_TileSize}, position, size, rotation);
                 continue;
             }
-            else if(tileMap.tiles[row][column] == 1)
+            else
             {
-                DrawRectangle(position.x, position.y, tileMap.tileSize, tileMap.tileSize, WHITE);
+                DrawRectangle(position.x, position.y, size, size, WHITE);
             }
-            else if (tileMap.tiles[row][column] == 2)
-            {
-                DrawRectangle(position.x, position.y, tileMap.tileSize, tileMap.tileSize, BLUE);
-                DrawRectangleLines(position.x, position.y, tileMap.tileSize, tileMap.tileSize, BLACK);
-            }
+                
         }
     }
 }
@@ -424,7 +442,7 @@ void DrawGame(GameState& gameState)
 
         if (isInvincible)
         {
-            DrawTextureRec(player->texture, source, player->position, { 255, 255,255, 125 });
+            DrawTextureRec(player->texture, source, player->position, { 255, 255, 255, 125 });
         }
         else
         {
@@ -680,7 +698,7 @@ namespace Game
         EndTextureMode();
         // NOTE:: Render to the main buffer
         BeginDrawing();
-        ClearBackground(MAGENTA);
+        ClearBackground(BLACK);
         // draw render texture scaled
         {
             F32 screenWidth { static_cast<F32>(GetScreenWidth()) };

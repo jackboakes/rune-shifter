@@ -14,6 +14,8 @@ enum class SpriteId
     JellyDeathEffect,
     BlockCrushEffect,
     Life,
+    Tile,
+    TileBorder,
     Count
 };
 
