@@ -131,6 +131,14 @@ inline constexpr U32 g_TileMapCountX { 15 };
 inline constexpr U32 g_TileMapCountY { 15 };
 inline constexpr U32 g_TileSize { 24 };
 
+enum class TileCorner
+{
+    None,
+    TopLeft,
+    TopRight,
+    BottomRight,
+    BottomLeft
+};
 
 /*
 NOTE::
@@ -138,7 +146,7 @@ NOTE::
 1 = wall
 2 = floor
 */
-inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
+inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
 {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -157,7 +165,7 @@ inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
 
-inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
+inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
 {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},

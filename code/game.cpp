@@ -49,11 +49,11 @@ Vector2 WorldPositionFromGridPosition(IVector2 gridPosition)
     return { static_cast<F32>(gridPosition.x) * static_cast<F32>(g_TileSize), static_cast<F32>(gridPosition.y) * static_cast<F32>(g_TileSize) };
 }
 
-F32 GetDeterministicRotation(IVector2 position)
+F32 GetDeterministicRotation(IVector2 gridPosition)
 {
-    U32 hash { (static_cast<U32>(position.x) * 73856093u) ^ (static_cast<U32>(position.y) * 19349663u) };
+    U32 hash { (static_cast<U32>(gridPosition.x) * 73856093u) ^ (static_cast<U32>(gridPosition.y) * 19349663u) };
 
-    return static_cast<float>((hash % 4)) * 90.0f;
+    return static_cast<float>(hash % 4) * 90.0f;
 }
 
 void DrawRotatedTile(Texture texture, Rectangle sourceRec, Vector2 position, F32 tileSize, F32 rotationDegrees)
@@ -63,31 +63,248 @@ void DrawRotatedTile(Texture texture, Rectangle sourceRec, Vector2 position, F32
     DrawTexturePro(texture, sourceRec, destRectangle, origin, rotationDegrees, WHITE);
 }
 
+B32 IsWall(const TileMap& tileMap, IVector2 gridPosition)
+{
+    B32 result { false };
+    if (gridPosition.x < 0 || gridPosition.y < 0 || gridPosition.x >= tileMap.count.x || gridPosition.y >= tileMap.count.y)
+    {
+        result = true;
+    }
+    else if (tileMap.tiles[gridPosition.y][gridPosition.x] != 2)
+    {
+        result = true;
+    }
+
+    return result;
+}
+
+B32 IsFloor(const TileMap& tileMap, IVector2 gridPosition)
+{
+    B32 result { false };
+    if (gridPosition.x < 0 || gridPosition.y < 0 || gridPosition.x >= tileMap.count.x || gridPosition.y >= tileMap.count.y)
+    {
+        result = false;
+    }
+    else if (tileMap.tiles[gridPosition.y][gridPosition.x] == 2)
+    {
+        result = true;
+    }
+
+    return result;
+}
+
+TileCorner IsOutsideCorner(const TileMap& tileMap, IVector2 gridPosition)
+{
+    TileCorner result { TileCorner::None };
+    if (tileMap.tiles[gridPosition.y][gridPosition.x] == 1)
+    {
+        B32 north { IsWall(tileMap, { gridPosition.x, gridPosition.y - 1 } ) };
+        B32 east { IsWall(tileMap, { gridPosition.x + 1, gridPosition.y } ) };
+        B32 south { IsWall(tileMap, { gridPosition.x, gridPosition.y + 1 } ) };
+        B32 west { IsWall(tileMap, { gridPosition.x - 1, gridPosition.y} ) };
+
+        B32 allWalls { north && east && south && west };
+
+        if (allWalls)
+        {
+            B32 ne { IsFloor(tileMap, {gridPosition.x + 1, gridPosition.y - 1 } ) };
+            B32 se { IsFloor(tileMap, { gridPosition.x + 1, gridPosition.y + 1 } ) };
+            B32 sw { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y + 1 } ) };
+            B32 nw { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y - 1 } ) };
+
+            if (se)
+            {
+                result = TileCorner::TopLeft;
+            }
+            else if (sw)
+            {
+                result = TileCorner::TopRight;
+            }
+            else if (nw)
+            {
+                result = TileCorner::BottomRight;
+            }
+            else if (ne)
+            {
+                result = TileCorner::BottomLeft;
+            }
+        }
+    }
+    return result;
+}
+
+TileCorner IsInsideCorner(const TileMap& tileMap, IVector2 gridPosition)
+{
+    TileCorner result { TileCorner::None };
+    if (tileMap.tiles[gridPosition.y][gridPosition.x] == 1)
+    {
+        B32 north { IsFloor(tileMap, { gridPosition.x, gridPosition.y - 1 } ) };
+        B32 east { IsFloor(tileMap, { gridPosition.x + 1, gridPosition.y } ) };
+        B32 south { IsFloor(tileMap, { gridPosition.x, gridPosition.y + 1 } ) };
+        B32 west { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y } ) };
+
+        B32 ne { IsFloor(tileMap, { gridPosition.x + 1, gridPosition.y - 1 } ) };
+        B32 se { IsFloor(tileMap, { gridPosition.x + 1, gridPosition.y + 1 } ) };
+        B32 sw { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y + 1 } ) };
+        B32 nw { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y - 1 } ) };
+
+        if (south && east && se)
+        {
+            result = TileCorner::TopLeft;
+        }
+        else if (south && west && sw)
+        {
+            result = TileCorner::TopRight;
+        }
+        else if (north && east && ne)
+        {
+            result = TileCorner::BottomLeft;
+        }
+        else if (north && west && nw)
+        {
+            result = TileCorner::BottomRight;
+        }
+    }
+    return result;
+}
+
 void DrawTileMap(const TileMap& tileMap)
 {
     Texture tileBorderSheet { Assets::GetSpriteSheet(SpriteId::TileBorder) };
-    const F32 size = static_cast<F32>(tileMap.tileSize);
+    const F32 size { static_cast<F32>(tileMap.tileSize) };
 
     for (S32 row { 0 }; row < tileMap.count.y; row++)
     {
         for (S32 column { 0 }; column < tileMap.count.x; column++)
         {
             U32 tileType { tileMap.tiles[row][column] };
-            if (tileType == 0) continue;
-
-            Vector2 position { WorldPositionFromGridPosition({ column, row }) };
-            IVector2 gridPosition { row, column };
-            if (tileType == 2)
+            IVector2 gridPosition { column, row };
+            Vector2 position { WorldPositionFromGridPosition(gridPosition) };
+            
+            if (tileType == 0)
             {
-                F32 rotation { GetDeterministicRotation(gridPosition) };
-                DrawRotatedTile(Assets::GetSpriteSheet(SpriteId::Tile), {0.0f, 0.0f, g_TileSize, g_TileSize}, position, size, rotation);
                 continue;
             }
-            else
+            else if (tileType == 1)
             {
-                DrawRectangle(position.x, position.y, size, size, WHITE);
-            }
+                Texture tileBorder { Assets::GetSpriteSheet(SpriteId::TileBorder) };
+                TileCorner outsideCorner { IsOutsideCorner(tileMap, gridPosition) };
+                TileCorner insideCorner { IsInsideCorner(tileMap, gridPosition) };
+                if (outsideCorner != TileCorner::None)
+                {
+                    Rectangle source { 0, 0, size, size };
+
+                    switch (outsideCorner)
+                    {
+                    case TileCorner::TopLeft:
+                    {
+                        source.x = 24.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::TopRight:
+                    {
+                        source.x = 72.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::BottomRight:
+                    {
+                        source.x = 168.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::BottomLeft:
+                    {
+                        source.x = 120.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+                    }
+
+                    DrawTextureRec(tileBorder, source, position, WHITE);
+                }
+                else if (insideCorner != TileCorner::None)
+                {
+                    Rectangle source { 0, 0, size, size };
+
+                    switch (insideCorner)
+                    {
+                    case TileCorner::TopLeft:
+                    {
+                        source.x = 360.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::TopRight:
+                    {
+                        source.x = 312.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::BottomRight:
+                    {
+                        source.x = 216.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+
+                    case TileCorner::BottomLeft:
+                    {
+                        source.x = 264.0f;
+                        source.y = 72.0f;
+                    }
+                    break;
+                    }
+
+                    DrawTextureRec(tileBorder, source, position, WHITE);
+                }
+                else if (IsWall(tileMap, { gridPosition.x, gridPosition.y } ))
+                {
+                    B32 northFloor { IsFloor(tileMap, { gridPosition.x, gridPosition.y - 1 } ) };
+                    B32 southFloor { IsFloor(tileMap, { gridPosition.x, gridPosition.y + 1 } ) };
+                    B32 eastFloor { IsFloor(tileMap, { gridPosition.x + 1, gridPosition.y } ) };
+                    B32 westFloor { IsFloor(tileMap, { gridPosition.x - 1, gridPosition.y } ) };
+
+                    F32 rotation { 0.0f };
+
+                    if (southFloor) 
+                    {
+                        rotation = 0.0f;
+                    }
+                    else if (northFloor) 
+                    {
+                        rotation = 180.0f;
+                    }
+                    else if (westFloor)
+                    {
+                        rotation = 90.0f;
+                    }
+                    else if (eastFloor)
+                    {
+                        rotation = 270.0f;
+                    }
+
+                    F32 startX { 24.0f };
+                    U32 hash { (static_cast<U32>(gridPosition.x) * 73856093u) ^ (static_cast<U32>(gridPosition.y) * 19349663u) };
+                    F32 randomOffset { static_cast<F32>(hash % 8) * 48.0f };
+                    Rectangle source { startX + randomOffset, 24.0f, size, size };
+                    DrawRotatedTile(tileBorder, source, position, size, rotation);
+                }
+
                 
+            }
+            else if (tileType == 2)
+            {
+                F32 rotation { GetDeterministicRotation(gridPosition) };
+                DrawRotatedTile(Assets::GetSpriteSheet(SpriteId::Tile), {0.0f, 0.0f, size, size }, position, size, rotation);
+                continue;
+            }
         }
     }
 }
