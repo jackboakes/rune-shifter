@@ -16,12 +16,13 @@ enum class SpriteId
     Life,
     Tile,
     TileBorder,
+    Doors,
     Count
 };
 
 namespace Assets
 {
-    static std::array<Texture, static_cast<size_t>(SpriteId::Count)> spriteTextures;
+    static std::array<Texture, static_cast<size_t>(SpriteId::Count ) + 1> spriteTextures;
 
     void LoadAllSprites();
     Texture GetSpriteSheet(SpriteId id);

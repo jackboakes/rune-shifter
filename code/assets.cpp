@@ -15,6 +15,7 @@ namespace Assets
         spriteTextures[static_cast<size_t>(SpriteId::Life)] = LoadTexture("../data/textures/life.png");
         spriteTextures[static_cast<size_t>(SpriteId::Tile)] = LoadTexture("../data/textures/tile.png");
         spriteTextures[static_cast<size_t>(SpriteId::TileBorder)] = LoadTexture("../data/textures/tile_border.png");
+        spriteTextures[static_cast<size_t>(SpriteId::Doors)] = LoadTexture("../data/textures/doors.png");
     }
 
     Texture GetSpriteSheet(SpriteId id)

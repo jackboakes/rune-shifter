@@ -74,7 +74,8 @@ enum class EntityKind
     Fire,
     Wall,
     Enemy,
-    Effect
+    Effect,
+    Door
 };
 
 struct EntityHandle
@@ -108,6 +109,7 @@ struct Entity
     BlockKind blockKind { BlockKind::None };
 
     B32 pushed;
+    B32 lockState;
 
     Texture texture;
     SpriteAnimation animation;
@@ -146,10 +148,10 @@ NOTE::
 1 = wall
 2 = floor
 */
-inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
+inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
 {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1},
     {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
     {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
     {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
@@ -165,7 +167,7 @@ inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
 
-inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
+inline constexpr U32 tiles12[g_TileMapCountY][g_TileMapCountX]
 {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -184,10 +186,10 @@ inline constexpr U32 tiles1[g_TileMapCountY][g_TileMapCountX]
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 };
 
-inline constexpr U32 tiles12[g_TileMapCountY][g_TileMapCountX]
+inline constexpr U32 tiles[g_TileMapCountY][g_TileMapCountX]
 {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,1,1,1,0,0,0,0,0,0},
+    {0,0,0,0,0,0,1,0,1,0,0,0,0,0,0},
     {0,0,0,0,0,0,1,2,1,0,0,0,0,0,0},
     {0,0,0,0,0,0,1,2,1,0,0,0,0,0,0},
     {0,0,0,0,0,0,1,2,1,0,0,0,0,0,0},

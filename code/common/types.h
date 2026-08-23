@@ -21,4 +21,9 @@ struct IVector2
 {
     S32 x;
     S32 y;
+
+    B32 operator==(const IVector2& other) const
+    {
+        return x == other.x && y == other.y;
+    }
 };

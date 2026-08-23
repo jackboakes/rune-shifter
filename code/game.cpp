@@ -264,7 +264,7 @@ void DrawTileMap(const TileMap& tileMap)
 
                     DrawTextureRec(tileBorder, source, position, WHITE);
                 }
-                else if (IsWall(tileMap, { gridPosition.x, gridPosition.y } ))
+                else
                 {
                     B32 northFloor { IsFloor(tileMap, { gridPosition.x, gridPosition.y - 1 } ) };
                     B32 southFloor { IsFloor(tileMap, { gridPosition.x, gridPosition.y + 1 } ) };
@@ -303,7 +303,6 @@ void DrawTileMap(const TileMap& tileMap)
             {
                 F32 rotation { GetDeterministicRotation(gridPosition) };
                 DrawRotatedTile(Assets::GetSpriteSheet(SpriteId::Tile), {0.0f, 0.0f, size, size }, position, size, rotation);
-                continue;
             }
         }
     }
@@ -371,7 +370,7 @@ EntityHandle AddEntity(GameState& gameState)
     return { entityIndex, entityIndex };
 }
 
-void AddPlayer(GameState& gameState)
+void AddPlayer(GameState& gameState, IVector2 gridPosition)
 {
     EntityHandle handle { AddEntity(gameState) };
 
@@ -386,7 +385,7 @@ void AddPlayer(GameState& gameState)
     entity.direction = Direction::Down;
     entity.speed = 80.0f;
     entity.handle = handle;
-    entity.gridPosition = { 7,7 };
+    entity.gridPosition = gridPosition;
     entity.targetGridPosition = entity.gridPosition;
     entity.position = WorldPositionFromGridPosition(entity.gridPosition);
     entity.targetPosition = entity.position;
@@ -489,6 +488,28 @@ void AddEnemy(GameState& gameState, IVector2 gridPosition)
     gameState.entities[handle.index] = entity;
 }
 
+void AddDoor(GameState& gameState, IVector2 gridPosition)
+{
+    EntityHandle handle { AddEntity(gameState) };
+
+    Entity entity;
+    entity.handle = handle;
+    entity.kind = EntityKind::Door;
+    entity.lockState = true;
+    entity.texture = Assets::GetSpriteSheet(SpriteId::Doors);
+    entity.animation.frameCount = 2;
+    entity.animation.currentFrame = 0;
+    entity.animation.frameWidth = 24;
+    entity.animation.frameHeight = 24;
+    entity.animation.frameAdvancement = 0;
+    entity.gridPosition = gridPosition;
+    entity.targetGridPosition = entity.gridPosition;
+    entity.position = WorldPositionFromGridPosition(entity.gridPosition);
+    entity.targetPosition = entity.position;
+    entity.startPosition = entity.position;
+    gameState.entities[handle.index] = entity;
+}
+
 B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targetGridPosition)
 {
     B32 result { false };
@@ -503,6 +524,7 @@ B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targ
         if (e.kind == EntityKind::None) continue;
         if (e.kind == EntityKind::Effect) continue;
         if (e.kind == EntityKind::Enemy) continue;
+        if (entity.kind == EntityKind::Player && e.kind == EntityKind::Door && e.lockState == false) continue;
         if (e.handle.id == entity.handle.id) continue;
 
         // NOTE:: Check against both current and target grid positions to account for entities mid-move
@@ -624,10 +646,10 @@ void DrawGame(GameState& gameState)
 
     // Draw lives
     {
+        Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
         U32 xOffset { g_TileSize - 2 };
         U32 yOffset { g_TileSize };
         U32 padding { 2 };
-        Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
         U32 stepX { lifeSprite.width + padding };
         for (int i { 0 }; i < gameState.lives; i++)
         {
@@ -670,19 +692,36 @@ void DrawGame(GameState& gameState)
 
 namespace Game
 {
-    void Initialise(GameState& gameState)
+    void LoadLevel(GameState& gameState, U32 levelNumber)
     {
+        for (auto& entity : gameState.entities)
+        {
+            entity.kind = EntityKind::None;
+        }
+
+        switch (levelNumber)
+        {
+        case 1:
+        {
+            AddPlayer(gameState, { 7, 12 } );
+            AddEnemy(gameState, { 7,3 });
+            AddBlock(gameState, BlockKind::Default, { 7, 7 });
+            AddDoor(gameState, { 7, 1 });
+        }
+        break;
+        }
+    }
+
+    void Initialise(GameState& gameState)
+    { 
         gameState.tileMap.count = { g_TileMapCountX, g_TileMapCountY };
         gameState.tileMap.tileSize = g_TileSize;
         gameState.tileMap.tiles = tiles;
 
         Assets::LoadAllSprites();
-
-        AddPlayer(gameState);
-        AddEnemy(gameState, { 7,11 });
-        AddBlock(gameState, BlockKind::Default, { 7,9 });
+        LoadLevel(gameState, 1);
     }
-    
+
     static void Update(GameState& gameState, F32 dt)
     {
         if (IsKeyPressed(KEY_ESCAPE))
@@ -886,6 +925,42 @@ namespace Game
                 if (entity.blockKind == BlockKind::FrozenEnemy || entity.kind == EntityKind::Enemy)
                 {
                     UpdateAnimation(gameState, entity.handle, true);
+                }
+            }
+
+            B32 enemiesAlive { false };
+            for (auto& entity : gameState.entities)
+            {
+                if (entity.kind == EntityKind::Enemy || (entity.kind == EntityKind::Block && entity.blockKind == BlockKind::FrozenEnemy))
+                {
+                    enemiesAlive = true;
+                    break;
+                }
+            }
+
+            if (!enemiesAlive)
+            {
+                for (auto& entity : gameState.entities)
+                {
+                    if (entity.kind == EntityKind::Door)
+                    {
+                        entity.lockState = false;
+                        entity.animation.currentFrame = 1;
+                    }
+                }
+            }
+
+            if (player)
+            {
+                for (auto& door : gameState.entities)
+                {
+                    if (door.kind == EntityKind::Door && door.lockState == false)
+                    {
+                        if (player->position == door.position)
+                        {
+                            LoadLevel(gameState, 1);
+                        }
+                    }
                 }
             }
         }
