@@ -327,7 +327,31 @@ void ToggleMenu()
 
 void DrawMenu()
 {
-    DrawText("Draw Menu", 0, 0, 16, WHITE);
+    constexpr F32 iconScale { 2.0f };
+    constexpr S32 labelFontSize { 16 };
+    constexpr S32 iconTextGap { 24 };
+
+    S32 halfScreenWidth { g_RenderTextureWidth / 2 };
+
+    Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
+    S32 halfTitleWidth { title.width / 2 };
+    DrawTexturePro(title, { 0, 0, static_cast<F32>(title.width), static_cast<F32>(title.height) }, { static_cast<F32>(halfTitleWidth), 24, static_cast<F32>(title.width) * iconScale, static_cast<F32>(title.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
+
+    Texture wasd { Assets::GetSpriteSheet(SpriteId::WASD) };
+    const char* wasdLabel { "TO MOVE" };
+    S32 wasdLabelWidth { MeasureText(wasdLabel, labelFontSize) };
+    S32 wasdRowWidth { static_cast<S32>(wasd.width * iconScale) + iconTextGap + wasdLabelWidth };
+    S32 wasdRowX { halfScreenWidth - wasdRowWidth / 2 };
+    DrawTexturePro(wasd, { 0, 0, static_cast<F32>(wasd.width), static_cast<F32>(wasd.height) }, { static_cast<F32>(wasdRowX), 96, static_cast<F32>(wasd.width) * iconScale, static_cast<F32>(wasd.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
+    DrawText(wasdLabel, wasdRowX + static_cast<S32>(wasd.width * iconScale) + iconTextGap, 96 + (wasd.height / 2), labelFontSize, WHITE);
+
+    Texture spaceKey { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
+    const char* spaceLabel { "TO PUSH" };
+    S32 spaceLabelWidth { MeasureText(spaceLabel, labelFontSize) };
+    S32 spaceRowWidth { static_cast<S32>(spaceKey.width * iconScale) + iconTextGap + spaceLabelWidth };
+    S32 spaceRowX { halfScreenWidth - spaceRowWidth / 2 };
+    DrawTexturePro(spaceKey, { 0, 0, static_cast<F32>(spaceKey.width), static_cast<F32>(spaceKey.height) }, { static_cast<F32>(spaceRowX), 192, static_cast<F32>(spaceKey.width) * iconScale, static_cast<F32>(spaceKey.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
+    DrawText(spaceLabel, spaceRowX + static_cast<S32>(spaceKey.width * iconScale) + iconTextGap, 192 + (spaceKey.height / 2), labelFontSize, WHITE);
 }
 
 //=================================================================
@@ -704,9 +728,11 @@ namespace Game
         case 1:
         {
             AddPlayer(gameState, { 7, 12 } );
-            AddEnemy(gameState, { 7,3 });
-            AddBlock(gameState, BlockKind::Default, { 7, 7 });
-            AddDoor(gameState, { 7, 1 });
+            AddEnemy(gameState, { 3,3 });
+            AddBlock(gameState, BlockKind::Default, { 7, 9 });
+            AddBlock(gameState, BlockKind::Default, { 8, 6 });
+            AddBlock(gameState, BlockKind::Default, { 8, 7 });
+            AddDoor(gameState, { 3, 1 });
         }
         break;
         }

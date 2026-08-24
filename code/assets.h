@@ -17,6 +17,9 @@ enum class SpriteId
     Tile,
     TileBorder,
     Doors,
+    Title,
+    SpaceKey,
+    WASD,
     Count
 };
 
