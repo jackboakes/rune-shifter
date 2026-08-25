@@ -668,6 +668,29 @@ void DrawGame(GameState& gameState)
 {
     DrawTileMap(gameState.tileMap);
 
+    if (gameState.level == 1)
+    {
+        constexpr S32 labelFontSize { 8 };
+        constexpr S32 iconTextGap { 12 };
+
+        Texture wasd { Assets::GetSpriteSheet(SpriteId::WASD) };
+        const char* wasdLabel { "TO MOVE" };
+        S32 wasdLabelWidth { MeasureText(wasdLabel, labelFontSize) };
+        S32 wasdRowWidth { static_cast<S32>(wasd.width) + iconTextGap + wasdLabelWidth };
+        S32 wasdRowX { iconTextGap };
+        S32 wasdRowY { ((g_RenderTextureHeight + 24) - static_cast<S32>(wasd.height)) / 2};
+        DrawTexture(wasd, wasdRowX, wasdRowY, WHITE);
+        DrawText(wasdLabel, wasdRowX + static_cast<S32>(wasd.width) + iconTextGap, wasdRowY, labelFontSize, WHITE);
+
+        Texture spaceKey { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
+        const char* spaceLabel { "TO PUSH" };
+        S32 spaceLabelWidth { MeasureText(spaceLabel, labelFontSize) };
+        S32 spaceRowWidth { static_cast<S32>(spaceKey.width) + iconTextGap + spaceLabelWidth };
+        S32 spaceRowX { g_RenderTextureWidth - iconTextGap - spaceRowWidth };
+        S32 spaceRowY { ((g_RenderTextureHeight + 24) - static_cast<S32>(spaceKey.height)) / 2 };
+        DrawTexture(spaceKey, spaceRowX, spaceRowY, WHITE);
+        DrawText(spaceLabel, spaceRowX + static_cast<S32>(spaceKey.width) + iconTextGap, spaceRowY, labelFontSize, WHITE);
+    }
     // Draw lives
     {
         Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
@@ -725,9 +748,23 @@ namespace Game
 
         switch (levelNumber)
         {
+        default:
         case 1:
         {
+            gameState.tileMap.tiles = level1;
+
             AddPlayer(gameState, { 7, 12 } );
+            AddBlock(gameState, BlockKind::Default, { 6, 11 });
+            AddBlock(gameState, BlockKind::Default, { 7, 11 });
+            AddBlock(gameState, BlockKind::Default, { 8, 11 });
+            AddDoor(gameState, { 7, 1 });
+        }
+        break;
+        case 2:
+        {
+            gameState.tileMap.tiles = level2;
+
+            AddPlayer(gameState, { 7, 12 });
             AddEnemy(gameState, { 3,3 });
             AddBlock(gameState, BlockKind::Default, { 7, 9 });
             AddBlock(gameState, BlockKind::Default, { 8, 6 });
@@ -735,6 +772,20 @@ namespace Game
             AddDoor(gameState, { 3, 1 });
         }
         break;
+        case 3:
+        {
+            gameState.tileMap.tiles = level3;
+
+            AddPlayer(gameState, { 7, 12 });
+            AddBlock(gameState, BlockKind::Ice, { 7, 10 });
+            AddEnemy(gameState, { 7, 3 });
+            AddEnemy(gameState, { 2, 3 });
+            AddBlock(gameState, BlockKind::Default, { 8, 3 });
+            AddBlock(gameState, BlockKind::Default, { 8, 4 });
+            AddDoor(gameState, { 7, 1 });
+        }
+        break;
+
         }
     }
 
@@ -742,7 +793,7 @@ namespace Game
     { 
         gameState.tileMap.count = { g_TileMapCountX, g_TileMapCountY };
         gameState.tileMap.tileSize = g_TileSize;
-        gameState.tileMap.tiles = tiles;
+        
 
         Assets::LoadAllSprites();
         LoadLevel(gameState, 1);
@@ -826,6 +877,11 @@ namespace Game
                         }
                     }
                 }
+            }
+
+            if (IsKeyPressed(KEY_R))
+            {
+                LoadLevel(gameState, gameState.level);
             }
 
             for (auto& entity : gameState.entities)
@@ -914,7 +970,6 @@ namespace Game
             for (auto& block : gameState.entities)
             {
                 if (block.kind != EntityKind::Block) continue;
-                if (block.blockKind == BlockKind::FrozenEnemy) continue;
                 if (!block.pushed) continue;
 
                 Rectangle blockBounds { block.position.x, block.position.y, g_TileSize, g_TileSize };
@@ -984,7 +1039,7 @@ namespace Game
                     {
                         if (player->position == door.position)
                         {
-                            LoadLevel(gameState, 1);
+                            LoadLevel(gameState, ++gameState.level);
                         }
                     }
                 }
