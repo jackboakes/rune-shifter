@@ -8,6 +8,15 @@
 #include <cassert>
 #include <cmath>
 
+void PlaySoundRandomisedPitch(Sound sound)
+{
+    constexpr S32 lowerPitch { 95 };
+    constexpr S32 higherPitch { 105 };
+    float pitch { GetRandomValue(lowerPitch, higherPitch) / 100.0f };
+    SetSoundPitch(sound, pitch);
+    PlaySound(sound);
+}
+
 IVector2 IVector2FromDirection(Direction direction)
 {
     IVector2 directionVector { 0 , 0 };
@@ -499,7 +508,7 @@ void AddEnemy(GameState& gameState, IVector2 gridPosition)
     entity.kind = EntityKind::Enemy;
     entity.texture = Assets::GetSpriteSheet(SpriteId::Jelly);
     entity.animation.frameCount = 5;
-    entity.animation.currentFrame = 0;
+    entity.animation.currentFrame = GetRandomValue(0, entity.animation.frameCount);
     entity.animation.frameWidth = 24;
     entity.animation.frameHeight = 24;
     entity.animation.frameAdvancement = 8;
@@ -555,7 +564,7 @@ B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targ
         if ((e.gridPosition.x == targetGridPosition.x && e.gridPosition.y == targetGridPosition.y) ||
             (e.targetGridPosition.x == targetGridPosition.x && e.targetGridPosition.y == targetGridPosition.y))
         {
-            result = false;
+             result = false;
             break;
         }
     }
@@ -668,7 +677,7 @@ void DrawGame(GameState& gameState)
 {
     DrawTileMap(gameState.tileMap);
 
-    if (gameState.level == 1)
+    if (gameState.level == Level::Level1)
     {
         constexpr S32 labelFontSize { 8 };
         constexpr S32 iconTextGap { 12 };
@@ -737,19 +746,27 @@ void DrawGame(GameState& gameState)
     }
 }
 
+void DrawVictory()
+{
+    const char* placeholder { "PLACEHOLDER" };
+    S32 width { MeasureText(placeholder, 16) };
+    S32 centerX { g_RenderTextureWidth / 2 };
+    DrawText(placeholder, centerX - width / 2, 160, 12, WHITE);
+}
+
 namespace Game
 {
-    void LoadLevel(GameState& gameState, U32 levelNumber)
+    void LoadLevel(GameState& gameState, Level level)
     {
         for (auto& entity : gameState.entities)
         {
             entity.kind = EntityKind::None;
         }
 
-        switch (levelNumber)
+        switch (level)
         {
         default:
-        case 1:
+        case Level::Level1:
         {
             gameState.tileMap.tiles = level1;
 
@@ -758,9 +775,18 @@ namespace Game
             AddBlock(gameState, BlockKind::Default, { 7, 11 });
             AddBlock(gameState, BlockKind::Default, { 8, 11 });
             AddDoor(gameState, { 7, 1 });
+
+            for (auto& e : gameState.entities)
+            {
+                if (e.kind == EntityKind::Door)
+                {
+                    e.lockState = false;
+                    e.animation.currentFrame = 1;
+                }
+            }
         }
         break;
-        case 2:
+        case Level::Level2:
         {
             gameState.tileMap.tiles = level2;
 
@@ -772,7 +798,7 @@ namespace Game
             AddDoor(gameState, { 3, 1 });
         }
         break;
-        case 3:
+        case Level::Level3:
         {
             gameState.tileMap.tiles = level3;
 
@@ -785,7 +811,26 @@ namespace Game
             AddDoor(gameState, { 7, 1 });
         }
         break;
+        case Level::Level4:
+        {
+            gameState.tileMap.tiles = level4;
 
+            AddPlayer(gameState, { 7, 13 });
+
+            // top room
+            AddBlock(gameState, BlockKind::Default, { 2, 4 });
+            AddEnemy(gameState, { 3, 4 });
+            AddBlock(gameState, BlockKind::Ice, { 4, 9 });
+
+            // bottom room
+            AddBlock(gameState, BlockKind::Default, { 13, 9 });
+            AddBlock(gameState, BlockKind::Default, { 3, 12 });
+            AddBlock(gameState, BlockKind::Default, { 10, 12 });
+            AddEnemy(gameState, { 12, 3 });
+            AddEnemy(gameState, { 2, 9 });
+            AddDoor(gameState, { 12, 1 });
+        }
+        break;
         }
     }
 
@@ -796,7 +841,8 @@ namespace Game
         
 
         Assets::LoadAllSprites();
-        LoadLevel(gameState, 1);
+        Assets::LoadAllSounds();
+        LoadLevel(gameState, Level::Level1);
     }
 
     static void Update(GameState& gameState, F32 dt)
@@ -869,11 +915,13 @@ namespace Game
                         {
                             AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
                             target->kind = EntityKind::None;
+                            PlaySoundRandomisedPitch(Assets::GetSound(SoundId::BlockBreak));
                         }
                         else if (target->blockKind == BlockKind::FrozenEnemy)
                         {
                             AddEffect(gameState, SpriteId::JellyDeathEffect, target->position, 3, 8);
                             target->kind = EntityKind::None;
+                            PlaySoundRandomisedPitch(Assets::GetSound(SoundId::EnemyDeath));
                         }
                     }
                 }
@@ -882,6 +930,24 @@ namespace Game
             if (IsKeyPressed(KEY_R))
             {
                 LoadLevel(gameState, gameState.level);
+            }
+
+            if (IsKeyPressed(KEY_LEFT))
+            {
+                if (static_cast<U32>(gameState.level) > 0)
+                {
+                    gameState.level = static_cast<Level>(static_cast<U32>(gameState.level) - 1);
+                    LoadLevel(gameState, gameState.level);
+                }
+            }
+
+            if (IsKeyPressed(KEY_RIGHT))
+            {
+                if (static_cast<U32>(gameState.level) + 1 < gameState.maxLevels)
+                {
+                    gameState.level = static_cast<Level>(static_cast<U32>(gameState.level) + 1);
+                    LoadLevel(gameState, gameState.level);
+                }
             }
 
             for (auto& entity : gameState.entities)
@@ -914,6 +980,21 @@ namespace Game
             B32 queuedMovement { gameState.tapBuffer != Direction::None || hold != Direction::None };
             B32 isAnimating { isMoving || queuedMovement };
             UpdateAnimation(gameState, gameState.playerHandle, isAnimating);
+            Sound footstepSound = Assets::GetSound(SoundId::Footsteps);
+            if (isAnimating)
+            {
+                if (!IsSoundPlaying(footstepSound))
+                {
+                    PlaySound(footstepSound);
+                }
+            }
+            else
+            {
+                if (IsSoundPlaying(footstepSound))
+                {
+                    StopSound(footstepSound);
+                }
+            }
 
             if (player)
             {
@@ -962,6 +1043,7 @@ namespace Game
                         AddBlock(gameState, BlockKind::FrozenEnemy, enemy.gridPosition);
                         enemy.kind = EntityKind::None;
                         iceBlock.kind = EntityKind::None;
+                        PlaySoundRandomisedPitch(Assets::GetSound(SoundId::FrozeEnemy));
                         break;
                     }
                 }
@@ -981,6 +1063,7 @@ namespace Game
                     {
                         AddEffect(gameState, SpriteId::JellyDeathEffect, enemy.position, 3, 8);
                         enemy.kind = EntityKind::None;
+                        PlaySoundRandomisedPitch(Assets::GetSound(SoundId::EnemyDeath));
                     }
                 }
             }
@@ -1025,8 +1108,12 @@ namespace Game
                 {
                     if (entity.kind == EntityKind::Door)
                     {
-                        entity.lockState = false;
-                        entity.animation.currentFrame = 1;
+                        if (entity.lockState)
+                        {
+                            entity.lockState = false;
+                            entity.animation.currentFrame = 1;
+                            PlaySoundRandomisedPitch(Assets::GetSound(SoundId::DoorUnlock));
+                        }
                     }
                 }
             }
@@ -1039,7 +1126,16 @@ namespace Game
                     {
                         if (player->position == door.position)
                         {
-                            LoadLevel(gameState, ++gameState.level);
+                            U32 nextLevel { static_cast<U32>(gameState.level) + 1 };
+                            if (nextLevel < gameState.maxLevels)
+                            {
+                                gameState.level = static_cast<Level>(nextLevel);
+                                LoadLevel(gameState, gameState.level);
+                            }
+                            else
+                            {
+                                g_ProgramMode = ProgramMode::Victory;
+                            }
                         }
                     }
                 }
@@ -1064,6 +1160,11 @@ namespace Game
             case ProgramMode::Menu:
             {
                 DrawMenu();
+            }
+            break;
+            case ProgramMode::Victory:
+            {
+                DrawVictory();
             }
             break;
             }

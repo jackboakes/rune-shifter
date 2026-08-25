@@ -21,16 +21,39 @@ namespace Assets
         spriteTextures[static_cast<size_t>(SpriteId::SpaceKey)] = LoadTexture("../data/textures/space.png");
     }
 
-    Texture GetSpriteSheet(SpriteId id)
+    Texture& GetSpriteSheet(SpriteId id)
     {
         return spriteTextures[static_cast<size_t>(id)];
     }
 
-    void UnloadAllTextures()
+    void UnloadAllSprites()
     {
-        for (Texture& texture : spriteTextures)
+        for (Texture& sprite : spriteTextures)
         {
-            UnloadTexture(texture);
+            UnloadTexture(sprite);
+        }
+    }
+
+    void LoadAllSounds()
+    {
+        sounds[static_cast<size_t>(SoundId::BlockBreak)] = LoadSound("../data/sound/block_break.mp3");
+        sounds[static_cast<size_t>(SoundId::BlockLand)] = LoadSound("../data/sound/block_land.mp3");
+        sounds[static_cast<size_t>(SoundId::EnemyDeath)] = LoadSound("../data/sound/jelly_death.mp3");
+        sounds[static_cast<size_t>(SoundId::FrozeEnemy)] = LoadSound("../data/sound/froze_enemy.mp3");
+        sounds[static_cast<size_t>(SoundId::DoorUnlock)] = LoadSound("../data/sound/door_unlock.mp3");
+        sounds[static_cast<size_t>(SoundId::Footsteps)] = LoadSound("../data/sound/footsteps.mp3");
+    }
+
+    Sound GetSound(SoundId id)
+    {
+        return sounds[static_cast<size_t>(id)];
+    }
+
+    void UnloadAllSounds()
+    {
+        for (Sound& sound : sounds)
+        {
+            UnloadSound(sound);
         }
     }
 }

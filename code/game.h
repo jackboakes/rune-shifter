@@ -9,7 +9,8 @@
 enum class ProgramMode
 {
     Game,
-    Menu
+    Menu,
+    Victory
 };
 inline ProgramMode g_ProgramMode { ProgramMode::Game };
 
@@ -205,6 +206,25 @@ inline constexpr U32 level3[g_TileMapCountY][g_TileMapCountX]
     {0,0,0,1,1,1,1,1,1,1,1,1,0,0,0},
 };
 
+inline constexpr U32 level4[g_TileMapCountY][g_TileMapCountX]
+{
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,1,1,1,1,0,1,1,1,1,1,1,0,1,1},
+    {0,1,2,2,1,1,1,2,2,2,2,2,2,2,1},
+    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {0,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {0,1,1,1,2,1,1,1,1,1,1,1,2,1,1},
+    {0,0,0,1,2,1,0,0,0,0,0,1,2,1,0},
+    {0,0,0,1,2,1,0,0,0,0,0,1,2,1,0},
+    {1,1,1,1,2,1,1,1,1,1,1,1,2,1,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,1,1,1,1,2,1},
+    {1,2,2,2,2,2,2,2,2,1,1,1,1,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+};
+
 struct TileMap
 {
     IVector2 count;
@@ -213,8 +233,14 @@ struct TileMap
 };
 
 //=================================================================
-// NOTE:: GameState
-//=================================================================
+enum class Level : U32
+{
+    Level1,
+    Level2,
+    Level3,
+    Level4,
+    Count
+};
 
 inline constexpr U32 g_MaxEntities { 256 };
 
@@ -227,7 +253,8 @@ struct GameState
 
     S32 lives { 3 };
     F32 invincibilityT { 0.0f };
-    U32 level { 1 };
+    Level level { Level::Level1 };
+    U32 maxLevels { static_cast<U32>(Level::Count) };
 
     Direction tapBuffer { Direction::None };
 

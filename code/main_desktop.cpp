@@ -13,12 +13,12 @@ int main()
     InitWindow(g_ScreenWidth, g_ScreenHeight, "Rune Shifter");
     SetWindowMinSize(720, 720);
 
+    InitAudioDevice();
+
     GameState gameState;
     Game::Initialise(gameState);
 
     SetExitKey(KEY_NULL);
-
-    ///InitAudioDevice();
 
     g_Target = LoadRenderTexture(g_RenderTextureWidth, g_RenderTextureHeight);
     SetTextureFilter(g_Target.texture, TEXTURE_FILTER_POINT);
