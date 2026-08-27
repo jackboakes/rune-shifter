@@ -38,6 +38,7 @@ namespace Assets
     void LoadAllSounds()
     {
         sounds[static_cast<size_t>(SoundId::BlockBreak)] = LoadSound("../data/sound/block_break.mp3");
+        sounds[static_cast<size_t>(SoundId::BlockSliding)] = LoadSound("../data/sound/block_sliding.mp3");
         sounds[static_cast<size_t>(SoundId::BlockLand)] = LoadSound("../data/sound/block_land.mp3");
         sounds[static_cast<size_t>(SoundId::EnemyDeath)] = LoadSound("../data/sound/jelly_death.mp3");
         sounds[static_cast<size_t>(SoundId::FrozeEnemy)] = LoadSound("../data/sound/froze_enemy.mp3");

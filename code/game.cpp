@@ -596,7 +596,7 @@ B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targ
     {
         if (e.kind == EntityKind::None) continue;
         if (e.kind == EntityKind::Effect) continue;
-        if (e.kind == EntityKind::Enemy) continue;
+        if (entity.kind == EntityKind::Block && e.kind == EntityKind::Enemy) continue;
         if (entity.kind == EntityKind::Player && e.kind == EntityKind::Door && e.lockState == false) continue;
         if (e.handle.id == entity.handle.id) continue;
 
@@ -767,18 +767,19 @@ void DrawGame(GameState& gameState)
             DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, (rowY + (iconH - fontSize) * 0.5f) + 48.0f }, fontSize, 1.0f, WHITE);
         }
     }
-    // Draw lives
-    {
-        Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
-        U32 xOffset { g_TileSize - 2 };
-        U32 yOffset { g_TileSize };
-        U32 padding { 2 };
-        U32 stepX { lifeSprite.width + padding };
-        for (int i { 0 }; i < gameState.lives; i++)
-        {
-            DrawTexture(lifeSprite, xOffset + i * stepX, yOffset, WHITE);
-        }
-    }
+
+    //// Draw lives
+    //{
+    //    Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
+    //    U32 xOffset { g_TileSize - 2 };
+    //    U32 yOffset { g_TileSize };
+    //    U32 padding { 2 };
+    //    U32 stepX { lifeSprite.width + padding };
+    //    for (int i { 0 }; i < gameState.lives; i++)
+    //    {
+    //        DrawTexture(lifeSprite, xOffset + i * stepX, yOffset, WHITE);
+    //    }
+    //}
 
     for (const auto& entity : gameState.entities)
     {
@@ -815,10 +816,32 @@ void DrawGame(GameState& gameState)
 
 void DrawVictory()
 {
-    const char* placeholder { "PLACEHOLDER" };
-    S32 width { MeasureText(placeholder, 16) };
-    S32 centerX { g_RenderTextureWidth / 2 };
-    DrawText(placeholder, centerX - width / 2, 160, 12, WHITE);
+    // Title
+    {
+        Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
+        F32 w { static_cast<F32>(title.width) };
+        F32 h { static_cast<F32>(title.height) };
+        F32 x { static_cast<F32>(title.width) * 0.5f };
+        DrawTexturePro(title, { 0.0f, 0.0f, w, h }, { x, 24.0f, w * 2.0f, h * 2.0f }, { 0.0f, 0.0f }, 0.0f, WHITE);
+    }
+
+    const F32 fontSize { static_cast<F32>(Assets::font.baseSize) * 0.5f };
+    S32 centreX { g_RenderTextureWidth / 2 };
+    S32 centerY { g_RenderTextureHeight / 2 };
+    constexpr F32 spaceBetween { 48.0f };
+    
+    const char* thanks { "THANKS FOR PLAYING" };
+    const char* me { "BY JACK BOAKES" };
+
+    const Vector2 thanksTextDimensions { MeasureTextEx(Assets::font, thanks, fontSize, 1.0f) };
+    const Vector2 meTextDimensions { MeasureTextEx(Assets::font, me, fontSize, 1.0f) };
+
+    const F32 totalHeight { thanksTextDimensions.y + meTextDimensions.y + spaceBetween };
+    const F32 startY { centerY - (totalHeight / 2.0f) };
+
+    DrawTextEx(Assets::font, thanks, { centreX - (thanksTextDimensions.x / 2), startY }, fontSize, 1.0f, WHITE);
+
+    DrawTextEx(Assets::font, me, { centreX - (meTextDimensions.x / 2), startY + thanksTextDimensions.y + spaceBetween }, fontSize, 1.0f, WHITE);
 }
 
 namespace Game
@@ -976,6 +999,7 @@ namespace Game
                     {
                         target->pushed = true;
                         StartMove(gameState, target->handle, player->direction, facingGridPosition);
+                        PlaySoundRandomisedPitch(Assets::GetSound(SoundId::BlockSliding));
                     }
                     else
                     {
@@ -1037,6 +1061,11 @@ namespace Game
                         else
                         {
                             entity.pushed = false;
+                            PlaySoundRandomisedPitch(Assets::GetSound(SoundId::BlockLand));
+                            if (IsSoundPlaying(Assets::GetSound(SoundId::BlockSliding)))
+                            {
+                                StopSound(Assets::GetSound(SoundId::BlockSliding));
+                            }
                         }
                         
                     }
@@ -1065,26 +1094,26 @@ namespace Game
                 }
             }
 
-            if (player)
-            {
-                Rectangle playerBounds { player->position.x, player->position.y, g_TileSize, g_TileSize };
-                for (const auto& enemy : gameState.entities)
-                {
-                    if (enemy.kind == EntityKind::Enemy)
-                    {
-                        Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
-                        if (CheckCollisionRecs(playerBounds, enemyBounds))
-                        {
-                            if (gameState.invincibilityT <= 0.0f)
-                            {
-                                gameState.lives--;
-                                gameState.lives = std::clamp(gameState.lives, 0, 3);
-                                gameState.invincibilityT = 1.5f;
-                            }
-                        }
-                    }
-                }
-            }
+            //if (player)
+            //{
+            //    Rectangle playerBounds { player->position.x, player->position.y, g_TileSize, g_TileSize };
+            //    for (const auto& enemy : gameState.entities)
+            //    {
+            //        if (enemy.kind == EntityKind::Enemy)
+            //        {
+            //            Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
+            //            if (CheckCollisionRecs(playerBounds, enemyBounds))
+            //            {
+            //                if (gameState.invincibilityT <= 0.0f)
+            //                {
+            //                    gameState.lives--;
+            //                    gameState.lives = std::clamp(gameState.lives, 0, 3);
+            //                    gameState.invincibilityT = 1.5f;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
 
             if (gameState.invincibilityT > 0.0f)
             {
@@ -1113,6 +1142,10 @@ namespace Game
                         enemy.kind = EntityKind::None;
                         iceBlock.kind = EntityKind::None;
                         PlaySoundRandomisedPitch(Assets::GetSound(SoundId::FrozeEnemy));
+                        if (IsSoundPlaying(Assets::GetSound(SoundId::BlockSliding)))
+                        {
+                            StopSound(Assets::GetSound(SoundId::BlockSliding));
+                        }
                         break;
                     }
                 }

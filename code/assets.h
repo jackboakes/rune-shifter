@@ -27,6 +27,7 @@ enum class SpriteId
 enum class SoundId
 {
     BlockBreak,
+    BlockSliding,
     BlockLand,
     EnemyDeath,
     FrozeEnemy,
