@@ -249,6 +249,9 @@ struct GameState
     U64 tick;
     std::array<Entity, g_MaxEntities> entities;
     U64 entityCount { 1 };
+    std::array<U64, g_MaxEntities> freeList;
+    U64 freeCount { 0 };
+    U64 nextHandleId { 1 };
     EntityHandle playerHandle;
 
     S32 lives { 3 };

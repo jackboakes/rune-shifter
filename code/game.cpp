@@ -436,11 +436,30 @@ Entity* EntityFromGridPosition(GameState& gameState, EntityKind kind, IVector2 g
 
 EntityHandle AddEntity(GameState& gameState)
 {
-    U64 entityIndex { gameState.entityCount++ };
+    U64 entityIndex;
+    if (gameState.freeCount > 0)
+    {
+        entityIndex = gameState.freeList[--gameState.freeCount];
+    }
+    else
+    {
+        entityIndex = gameState.entityCount++;
+        assert(gameState.entityCount <= gameState.entities.size() && "Entity count greater than size at add entity");
+    }
 
-    assert(gameState.entityCount < gameState.entities.size() && "Entity count greater than size at add entity");
-    //TODO:: get an old index from the free list once we add that
-    return { entityIndex, entityIndex };
+    U64 id { gameState.nextHandleId++ };
+    return { id, entityIndex };
+}
+
+void RemoveEntity(GameState& gameState, EntityHandle handle)
+{
+    Entity* entity { EntityFromHandle(gameState, handle) };
+    if (entity)
+    {
+        entity->kind = EntityKind::None;
+        assert(gameState.freeCount < gameState.freeList.size() && "Free list overflow in RemoveEntity");
+        gameState.freeList[gameState.freeCount++] = handle.index;
+    }
 }
 
 void AddPlayer(GameState& gameState, IVector2 gridPosition)
@@ -865,6 +884,8 @@ namespace Game
         {
             entity.kind = EntityKind::None;
         }
+        gameState.entityCount = 1;
+        gameState.freeCount = 0;
 
         switch (level)
         {
@@ -1020,13 +1041,13 @@ namespace Game
                         if (target->blockKind == BlockKind::Default)
                         {
                             AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
-                            target->kind = EntityKind::None;
+                            RemoveEntity(gameState, target->handle);
                             PlaySoundRandomisedPitch(Assets::GetSound(SoundId::BlockBreak));
                         }
                         else if (target->blockKind == BlockKind::FrozenEnemy)
                         {
                             AddEffect(gameState, SpriteId::JellyDeathEffect, target->position, 3, 8);
-                            target->kind = EntityKind::None;
+                            RemoveEntity(gameState, target->handle);
                             PlaySoundRandomisedPitch(Assets::GetSound(SoundId::EnemyDeath));
                         }
                     }
