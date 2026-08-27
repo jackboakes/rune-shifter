@@ -33,5 +33,7 @@ int main()
     }
 
     UnloadRenderTexture(g_Target);
+    Game::Unload();
+    CloseAudioDevice();
     CloseWindow();
 }

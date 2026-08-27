@@ -504,11 +504,24 @@ void AddBlock(GameState& gameState, BlockKind blockKind, IVector2 gridPosition)
     entity.blockKind = blockKind;
     entity.pushed = false;
     entity.texture = texture;
-    entity.animation.frameCount = 6;
-    entity.animation.currentFrame = 0;
-    entity.animation.frameWidth = 24;
-    entity.animation.frameHeight = 24;
-    entity.animation.frameAdvancement = 8;
+    if (blockKind == BlockKind::FrozenEnemy)
+    {
+        entity.animation.padding = 24;
+        entity.animation.frameCount = 6;
+        entity.animation.currentFrame = 0;
+        entity.animation.frameWidth = 24;
+        entity.animation.frameHeight = 24;
+        entity.animation.frameAdvancement = 8;
+    }
+    else
+    {
+        entity.animation.padding = 0;
+        entity.animation.frameCount = 1;
+        entity.animation.currentFrame = 0;
+        entity.animation.frameWidth = 24;
+        entity.animation.frameHeight = 24;
+        entity.animation.frameAdvancement = 1;
+    }
     entity.speed = 360.0f;
 
     entity.gridPosition = gridPosition;
@@ -933,7 +946,7 @@ namespace Game
 
         Assets::LoadAllSprites();
         Assets::LoadAllSounds();
-        Assets::font = LoadFont("../data/font/prstart.ttf");
+        Assets::LoadAllFonts();
         LoadLevel(gameState, Level::Level1);
     }
 
@@ -1295,5 +1308,12 @@ namespace Game
     {
         Update(gameState, dt);
         DrawFrame(gameState);
+    }
+
+    void Unload()
+    {
+        Assets::UnloadAllSounds();
+        Assets::UnloadAllSprites();
+        Assets::UnloadAllFonts();
     }
 }

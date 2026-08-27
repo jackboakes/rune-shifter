@@ -269,4 +269,5 @@ namespace Game
     static void Update(GameState& gameState, F32 dt);
     static void DrawFrame(GameState& gameState);
     void UpdateAndDrawFrame(GameState& gameState, F32 dt);
+    void Unload();
 }

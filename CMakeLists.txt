@@ -66,10 +66,15 @@ endif()
 
 if ("${PLATFORM}" STREQUAL "Web")
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/minshell.html")
+        set(MINSHELL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/minshell.html")
+    else()
+        set(MINSHELL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/code/third_party/raylib/src/minshell.html")
+    endif()
     target_link_options(${PROJECT_NAME} PUBLIC 
         -sUSE_GLFW=3 
-        PUBLIC --preload-file data
-        PUBLIC --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/minshell.html
+        --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/data@data
+        --shell-file ${MINSHELL_PATH}
     )
 endif()
 

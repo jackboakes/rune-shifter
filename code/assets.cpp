@@ -2,6 +2,10 @@
 
 namespace Assets
 {
+    std::array<Texture, static_cast<size_t>(SpriteId::Count) + 1> spriteTextures;
+    std::array<Sound, static_cast<size_t>(SoundId::Count) + 1> sounds;
+    Font font;
+
     void LoadAllSprites()
     {
         spriteTextures[static_cast<size_t>(SpriteId::Player)] = LoadTexture("../data/textures/player_spritesheet.png");
@@ -57,5 +61,15 @@ namespace Assets
         {
             UnloadSound(sound);
         }
+    }
+
+    void LoadAllFonts()
+    {
+        font = LoadFont("../data/font/PrStart.ttf");
+    }
+
+    void UnloadAllFonts()
+    {
+        UnloadFont(font);
     }
 }
