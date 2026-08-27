@@ -19,6 +19,7 @@ namespace Assets
         spriteTextures[static_cast<size_t>(SpriteId::Title)] = LoadTexture("../data/textures/title.png");
         spriteTextures[static_cast<size_t>(SpriteId::WASD)] = LoadTexture("../data/textures/wasd.png");
         spriteTextures[static_cast<size_t>(SpriteId::SpaceKey)] = LoadTexture("../data/textures/space.png");
+        spriteTextures[static_cast<size_t>(SpriteId::RKey)] = LoadTexture("../data/textures/r.png");
     }
 
     Texture& GetSpriteSheet(SpriteId id)

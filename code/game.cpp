@@ -337,30 +337,70 @@ void ToggleMenu()
 void DrawMenu()
 {
     constexpr F32 iconScale { 2.0f };
-    constexpr S32 labelFontSize { 16 };
-    constexpr S32 iconTextGap { 24 };
+    constexpr F32 iconTextGap { 20.0f };
+    const F32 fontSize { static_cast<F32>(Assets::font.baseSize) * 0.5f };
+    const F32 screenCenterX { static_cast<F32>(g_RenderTextureWidth) * 0.5f };
 
-    S32 halfScreenWidth { g_RenderTextureWidth / 2 };
+    // Title
+    {
+        Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
+        F32 w { static_cast<F32>(title.width) };
+        F32 h { static_cast<F32>(title.height) };
+        F32 x { static_cast<F32>(title.width) * 0.5f };
+        DrawTexturePro(title, { 0.0f, 0.0f, w, h }, { x, 24.0f, w * iconScale, h * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
+    }
 
-    Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
-    S32 halfTitleWidth { title.width / 2 };
-    DrawTexturePro(title, { 0, 0, static_cast<F32>(title.width), static_cast<F32>(title.height) }, { static_cast<F32>(halfTitleWidth), 24, static_cast<F32>(title.width) * iconScale, static_cast<F32>(title.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
+    Texture wasdIcon { Assets::GetSpriteSheet(SpriteId::WASD) };
+    Texture spaceIcon { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
+    Texture resetIcon { Assets::GetSpriteSheet(SpriteId::RKey) };
 
-    Texture wasd { Assets::GetSpriteSheet(SpriteId::WASD) };
-    const char* wasdLabel { "TO MOVE" };
-    S32 wasdLabelWidth { MeasureText(wasdLabel, labelFontSize) };
-    S32 wasdRowWidth { static_cast<S32>(wasd.width * iconScale) + iconTextGap + wasdLabelWidth };
-    S32 wasdRowX { halfScreenWidth - wasdRowWidth / 2 };
-    DrawTexturePro(wasd, { 0, 0, static_cast<F32>(wasd.width), static_cast<F32>(wasd.height) }, { static_cast<F32>(wasdRowX), 96, static_cast<F32>(wasd.width) * iconScale, static_cast<F32>(wasd.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
-    DrawText(wasdLabel, wasdRowX + static_cast<S32>(wasd.width * iconScale) + iconTextGap, 96 + (wasd.height / 2), labelFontSize, WHITE);
+    const char* wasdText { "TO MOVE" };
+    const char* spaceText { "TO PUSH" };
+    const char* resetText { "TO RESET" };
 
-    Texture spaceKey { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
-    const char* spaceLabel { "TO PUSH" };
-    S32 spaceLabelWidth { MeasureText(spaceLabel, labelFontSize) };
-    S32 spaceRowWidth { static_cast<S32>(spaceKey.width * iconScale) + iconTextGap + spaceLabelWidth };
-    S32 spaceRowX { halfScreenWidth - spaceRowWidth / 2 };
-    DrawTexturePro(spaceKey, { 0, 0, static_cast<F32>(spaceKey.width), static_cast<F32>(spaceKey.height) }, { static_cast<F32>(spaceRowX), 192, static_cast<F32>(spaceKey.width) * iconScale, static_cast<F32>(spaceKey.height) * iconScale }, { 0.0f, 0.0f }, 0.0f, WHITE);
-    DrawText(spaceLabel, spaceRowX + static_cast<S32>(spaceKey.width * iconScale) + iconTextGap, 192 + (spaceKey.height / 2), labelFontSize, WHITE);
+    F32 maxIconWidth { std::max({ static_cast<F32>(wasdIcon.width), static_cast<F32>(spaceIcon.width), static_cast<F32>(resetIcon.width) }) * iconScale };
+    F32 maxTextWidth { std::max({
+        MeasureTextEx(Assets::font, wasdText, fontSize, 1.0f).x,
+        MeasureTextEx(Assets::font, spaceText, fontSize, 1.0f).x,
+        MeasureTextEx(Assets::font, resetText, fontSize, 1.0f).x
+    }) };
+
+    F32 totalMenuWidth { maxIconWidth + iconTextGap + maxTextWidth };
+    F32 iconColumnX { screenCenterX - (totalMenuWidth * 0.5f) };
+    F32 textColumnX { iconColumnX + maxIconWidth + iconTextGap };
+
+    // WASD Keys
+    {
+        F32 iconW { static_cast<F32>(wasdIcon.width) * iconScale };
+        F32 iconH { static_cast<F32>(wasdIcon.height) * iconScale };
+        F32 iconX { iconColumnX + (maxIconWidth - iconW) * 0.5f };
+        F32 rowY { 96.0f };
+
+        DrawTexturePro(wasdIcon, { 0.0f, 0.0f, static_cast<F32>(wasdIcon.width), static_cast<F32>(wasdIcon.height) }, { iconX, rowY, iconW, iconH }, { 0.0f, 0.0f }, 0.0f, WHITE);
+        DrawTextEx(Assets::font, wasdText, { textColumnX, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
+    }
+
+    // Space Key
+    {
+        F32 iconW { static_cast<F32>(spaceIcon.width) * iconScale };
+        F32 iconH { static_cast<F32>(spaceIcon.height) * iconScale };
+        F32 iconX { iconColumnX + (maxIconWidth - iconW) * 0.5f };
+        F32 rowY { 192.0f };
+
+        DrawTexturePro(spaceIcon, { 0.0f, 0.0f, static_cast<F32>(spaceIcon.width), static_cast<F32>(spaceIcon.height) }, { iconX, rowY, iconW, iconH }, { 0.0f, 0.0f }, 0.0f, WHITE);
+        DrawTextEx(Assets::font, spaceText, { textColumnX, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
+    }
+
+    // Reset Key
+    {
+        F32 iconW { static_cast<F32>(resetIcon.width) * iconScale };
+        F32 iconH { static_cast<F32>(resetIcon.height) * iconScale };
+        F32 iconX { iconColumnX + (maxIconWidth - iconW) * 0.5f };
+        F32 rowY { 256.0f };
+
+        DrawTexturePro(resetIcon, { 0.0f, 0.0f, static_cast<F32>(resetIcon.width), static_cast<F32>(resetIcon.height) }, { iconX, rowY, iconW, iconH }, { 0.0f, 0.0f }, 0.0f, WHITE);
+        DrawTextEx(Assets::font, resetText, { textColumnX, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
+    }
 }
 
 //=================================================================
@@ -679,26 +719,53 @@ void DrawGame(GameState& gameState)
 
     if (gameState.level == Level::Level1)
     {
-        constexpr S32 labelFontSize { 8 };
-        constexpr S32 iconTextGap { 12 };
+        constexpr F32 iconTextGap { 6.0f };
+        const F32 fontSize { static_cast<F32>(Assets::font.baseSize) * 0.25f };
+        const F32 screenW { static_cast<F32>(g_RenderTextureWidth) };
+        const F32 centerY { static_cast<F32>(g_RenderTextureHeight) * 0.5f };
 
-        Texture wasd { Assets::GetSpriteSheet(SpriteId::WASD) };
-        const char* wasdLabel { "TO MOVE" };
-        S32 wasdLabelWidth { MeasureText(wasdLabel, labelFontSize) };
-        S32 wasdRowWidth { static_cast<S32>(wasd.width) + iconTextGap + wasdLabelWidth };
-        S32 wasdRowX { iconTextGap };
-        S32 wasdRowY { ((g_RenderTextureHeight + 24) - static_cast<S32>(wasd.height)) / 2};
-        DrawTexture(wasd, wasdRowX, wasdRowY, WHITE);
-        DrawText(wasdLabel, wasdRowX + static_cast<S32>(wasd.width) + iconTextGap, wasdRowY, labelFontSize, WHITE);
+        // WASD Keys
+        {
+            Texture icon { Assets::GetSpriteSheet(SpriteId::WASD) };
+            const char* text { "TO MOVE" };
+            F32 iconW { static_cast<F32>(icon.width) };
+            F32 iconH { static_cast<F32>(icon.height) };
+            F32 rowX { iconTextGap };
+            F32 rowY { centerY - (iconH * 0.5f) };
 
-        Texture spaceKey { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
-        const char* spaceLabel { "TO PUSH" };
-        S32 spaceLabelWidth { MeasureText(spaceLabel, labelFontSize) };
-        S32 spaceRowWidth { static_cast<S32>(spaceKey.width) + iconTextGap + spaceLabelWidth };
-        S32 spaceRowX { g_RenderTextureWidth - iconTextGap - spaceRowWidth };
-        S32 spaceRowY { ((g_RenderTextureHeight + 24) - static_cast<S32>(spaceKey.height)) / 2 };
-        DrawTexture(spaceKey, spaceRowX, spaceRowY, WHITE);
-        DrawText(spaceLabel, spaceRowX + static_cast<S32>(spaceKey.width) + iconTextGap, spaceRowY, labelFontSize, WHITE);
+            DrawTexture(icon, rowX, rowY, WHITE);
+            DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
+        }
+
+        // Space Key
+        {
+            Texture icon { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
+            const char* text { "TO PUSH" };
+            F32 iconW { static_cast<F32>(icon.width) };
+            F32 iconH { static_cast<F32>(icon.height) };
+            F32 textW { MeasureTextEx(Assets::font, text, fontSize, 1.0f).x };
+            F32 rowW { iconW + iconTextGap + textW };
+            F32 rowX { screenW - iconTextGap - rowW };
+            F32 rowY { centerY - (iconH * 0.5f) };
+
+            DrawTexture(icon, rowX, rowY, WHITE);
+            DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
+        }
+
+        // R Key
+        {
+            Texture icon { Assets::GetSpriteSheet(SpriteId::RKey) };
+            const char* text { "TO RESET" };
+            F32 iconW { static_cast<F32>(icon.width) };
+            F32 iconH { static_cast<F32>(icon.height) };
+            F32 textW { MeasureTextEx(Assets::font, text, fontSize, 1.0f).x };
+            F32 rowW { iconW + iconTextGap + textW };
+            F32 rowX { iconTextGap };
+            F32 rowY { centerY - (iconH * 0.5f) };
+
+            DrawTexture(icon, rowX, rowY + 48.0f, WHITE);
+            DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, (rowY + (iconH - fontSize) * 0.5f) + 48.0f }, fontSize, 1.0f, WHITE);
+        }
     }
     // Draw lives
     {
@@ -818,17 +885,18 @@ namespace Game
             AddPlayer(gameState, { 7, 13 });
 
             // top room
-            AddBlock(gameState, BlockKind::Default, { 2, 4 });
-            AddEnemy(gameState, { 3, 4 });
-            AddBlock(gameState, BlockKind::Ice, { 4, 9 });
+            AddBlock(gameState, BlockKind::Default, { 4, 4 });
+            AddEnemy(gameState, { 5, 4 });
+            AddBlock(gameState, BlockKind::Ice, { 6, 9 });
+            AddEnemy(gameState, { 11, 3 });
+            AddDoor(gameState, { 11, 1 });
 
             // bottom room
-            AddBlock(gameState, BlockKind::Default, { 13, 9 });
-            AddBlock(gameState, BlockKind::Default, { 3, 12 });
+            AddBlock(gameState, BlockKind::Default, { 12, 9 });
+            AddBlock(gameState, BlockKind::Default, { 5, 12 });
             AddBlock(gameState, BlockKind::Default, { 10, 12 });
-            AddEnemy(gameState, { 12, 3 });
-            AddEnemy(gameState, { 2, 9 });
-            AddDoor(gameState, { 12, 1 });
+            AddEnemy(gameState, { 4, 9 });
+
         }
         break;
         }
@@ -842,6 +910,7 @@ namespace Game
 
         Assets::LoadAllSprites();
         Assets::LoadAllSounds();
+        Assets::font = LoadFont("../data/font/prstart.ttf");
         LoadLevel(gameState, Level::Level1);
     }
 

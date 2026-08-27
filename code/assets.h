@@ -20,6 +20,7 @@ enum class SpriteId
     Title,
     SpaceKey,
     WASD,
+    RKey,
     Count
 };
 
@@ -38,6 +39,7 @@ namespace Assets
 {
     static std::array<Texture, static_cast<size_t>(SpriteId::Count ) + 1> spriteTextures;
     static std::array<Sound, static_cast<size_t>(SoundId::Count) + 1> sounds;
+    static Font font;
 
     void LoadAllSprites();
     void LoadAllSounds();
