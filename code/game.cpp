@@ -12,7 +12,7 @@ void PlaySoundRandomisedPitch(Sound sound)
 {
     constexpr S32 lowerPitch { 95 };
     constexpr S32 higherPitch { 105 };
-    float pitch { GetRandomValue(lowerPitch, higherPitch) / 100.0f };
+    F32 pitch { GetRandomValue(lowerPitch, higherPitch) / 100.0f };
     SetSoundPitch(sound, pitch);
     PlaySound(sound);
 }
@@ -62,7 +62,7 @@ F32 GetDeterministicRotation(IVector2 gridPosition)
 {
     U32 hash { (static_cast<U32>(gridPosition.x) * 73856093u) ^ (static_cast<U32>(gridPosition.y) * 19349663u) };
 
-    return static_cast<float>(hash % 4) * 90.0f;
+    return static_cast<F32>(hash % 4) * 90.0f;
 }
 
 void DrawRotatedTile(Texture texture, Rectangle sourceRec, Vector2 position, F32 tileSize, F32 rotationDegrees)
@@ -799,19 +799,6 @@ void DrawGame(GameState& gameState)
             DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, (rowY + (iconH - fontSize) * 0.5f) + 48.0f }, fontSize, 1.0f, WHITE);
         }
     }
-
-    //// Draw lives
-    //{
-    //    Texture2D lifeSprite { Assets::GetSpriteSheet(SpriteId::Life) };
-    //    U32 xOffset { g_TileSize - 2 };
-    //    U32 yOffset { g_TileSize };
-    //    U32 padding { 2 };
-    //    U32 stepX { lifeSprite.width + padding };
-    //    for (int i { 0 }; i < gameState.lives; i++)
-    //    {
-    //        DrawTexture(lifeSprite, xOffset + i * stepX, yOffset, WHITE);
-    //    }
-    //}
 
     for (const auto& entity : gameState.entities)
     {
