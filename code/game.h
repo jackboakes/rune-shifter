@@ -254,8 +254,6 @@ struct GameState
     U64 nextHandleId { 1 };
     EntityHandle playerHandle;
 
-    S32 lives { 3 };
-    F32 invincibilityT { 0.0f };
     Level level { Level::Level1 };
     U32 maxLevels { static_cast<U32>(Level::Count) };
 

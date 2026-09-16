@@ -820,16 +820,7 @@ void DrawGame(GameState& gameState)
             static_cast<F32>(animation.frameHeight)
         };
 
-        B32 isInvincible { gameState.invincibilityT > 0.0f && std::fmod(gameState.invincibilityT, 0.1f * 2.0f) >= 0.1f };
-
-        if (isInvincible)
-        {
-            DrawTextureRec(player->texture, source, player->position, { 255, 255, 255, 125 });
-        }
-        else
-        {
-            DrawTextureRec(player->texture, source, player->position, WHITE);
-        }
+        DrawTextureRec(player->texture, source, player->position, WHITE);
     }
 }
 
@@ -1112,36 +1103,6 @@ namespace Game
                 if (IsSoundPlaying(footstepSound))
                 {
                     StopSound(footstepSound);
-                }
-            }
-
-            //if (player)
-            //{
-            //    Rectangle playerBounds { player->position.x, player->position.y, g_TileSize, g_TileSize };
-            //    for (const auto& enemy : gameState.entities)
-            //    {
-            //        if (enemy.kind == EntityKind::Enemy)
-            //        {
-            //            Rectangle enemyBounds { enemy.position.x, enemy.position.y, g_TileSize, g_TileSize };
-            //            if (CheckCollisionRecs(playerBounds, enemyBounds))
-            //            {
-            //                if (gameState.invincibilityT <= 0.0f)
-            //                {
-            //                    gameState.lives--;
-            //                    gameState.lives = std::clamp(gameState.lives, 0, 3);
-            //                    gameState.invincibilityT = 1.5f;
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-
-            if (gameState.invincibilityT > 0.0f)
-            {
-                gameState.invincibilityT -= dt;
-                if (gameState.invincibilityT < 0.0f)
-                {
-                    gameState.invincibilityT = 0.0f;
                 }
             }
 
