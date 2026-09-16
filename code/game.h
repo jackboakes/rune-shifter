@@ -73,7 +73,6 @@ enum class EntityKind
     Player,
     Block,
     Fire,
-    Wall,
     Enemy,
     Effect,
     Door
@@ -263,15 +262,11 @@ struct GameState
     Direction tapBuffer { Direction::None };
 
     TileMap tileMap;
-
-    Font font;
 };
 
 namespace Game
 {
     void Initialise(GameState& gameState);
-    static void Update(GameState& gameState, F32 dt);
-    static void DrawFrame(GameState& gameState);
     void UpdateAndDrawFrame(GameState& gameState, F32 dt);
     void Unload();
 }

@@ -37,8 +37,8 @@ enum class SoundId
 
 namespace Assets
 {
-    extern std::array<Texture, static_cast<size_t>(SpriteId::Count ) + 1> spriteTextures;
-    extern std::array<Sound, static_cast<size_t>(SoundId::Count) + 1> sounds;
+    extern std::array<Texture, static_cast<size_t>(SpriteId::Count )> spriteTextures;
+    extern std::array<Sound, static_cast<size_t>(SoundId::Count)> sounds;
     extern Font font;
 
     void LoadAllSprites();

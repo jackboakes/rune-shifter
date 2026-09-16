@@ -186,7 +186,6 @@ TileCorner IsInsideCorner(const TileMap& tileMap, IVector2 gridPosition)
 
 void DrawTileMap(const TileMap& tileMap)
 {
-    Texture tileBorderSheet { Assets::GetSpriteSheet(SpriteId::TileBorder) };
     const F32 size { static_cast<F32>(tileMap.tileSize) };
 
     for (S32 row { 0 }; row < tileMap.count.y; row++)
@@ -431,7 +430,7 @@ Entity* EntityFromGridPosition(GameState& gameState, EntityKind kind, IVector2 g
     for (Entity& e : gameState.entities)
     {
         if (e.kind != kind) continue;
-        if (e.gridPosition.x == gridPosition.x && e.gridPosition.y == gridPosition.y)
+        if (e.gridPosition == gridPosition)
         {
             entity = &e;
             break;
@@ -644,8 +643,7 @@ B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targ
         if (e.handle.id == entity.handle.id) continue;
 
         // NOTE:: Check against both current and target grid positions to account for entities mid-move
-        if ((e.gridPosition.x == targetGridPosition.x && e.gridPosition.y == targetGridPosition.y) ||
-            (e.targetGridPosition.x == targetGridPosition.x && e.targetGridPosition.y == targetGridPosition.y))
+        if ((e.gridPosition == targetGridPosition) || (e.targetGridPosition == targetGridPosition))
         {
              result = false;
             break;
@@ -809,8 +807,6 @@ void DrawGame(GameState& gameState)
             const char* text { "TO RESET" };
             F32 iconW { static_cast<F32>(icon.width) };
             F32 iconH { static_cast<F32>(icon.height) };
-            F32 textW { MeasureTextEx(Assets::font, text, fontSize, 1.0f).x };
-            F32 rowW { iconW + iconTextGap + textW };
             F32 rowX { iconTextGap };
             F32 rowY { centerY - (iconH * 0.5f) };
 

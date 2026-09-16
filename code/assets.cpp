@@ -2,8 +2,8 @@
 
 namespace Assets
 {
-    std::array<Texture, static_cast<size_t>(SpriteId::Count) + 1> spriteTextures;
-    std::array<Sound, static_cast<size_t>(SoundId::Count) + 1> sounds;
+    std::array<Texture, static_cast<size_t>(SpriteId::Count)> spriteTextures;
+    std::array<Sound, static_cast<size_t>(SoundId::Count)> sounds;
     Font font;
 
     void LoadAllSprites()
