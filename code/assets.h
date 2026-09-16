@@ -13,7 +13,6 @@ enum class SpriteId
     Jelly,
     JellyDeathEffect,
     BlockCrushEffect,
-    Life,
     Tile,
     TileBorder,
     Doors,

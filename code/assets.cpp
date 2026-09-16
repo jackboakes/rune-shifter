@@ -16,7 +16,6 @@ namespace Assets
         spriteTextures[static_cast<size_t>(SpriteId::Jelly)] = LoadTexture("../data/textures/jelly.png");
         spriteTextures[static_cast<size_t>(SpriteId::JellyDeathEffect)] = LoadTexture("../data/textures/jelly_death_effect.png");
         spriteTextures[static_cast<size_t>(SpriteId::BlockCrushEffect)] = LoadTexture("../data/textures/block_crush_effect.png");
-        spriteTextures[static_cast<size_t>(SpriteId::Life)] = LoadTexture("../data/textures/life.png");
         spriteTextures[static_cast<size_t>(SpriteId::Tile)] = LoadTexture("../data/textures/tile.png");
         spriteTextures[static_cast<size_t>(SpriteId::TileBorder)] = LoadTexture("../data/textures/tile_border.png");
         spriteTextures[static_cast<size_t>(SpriteId::Doors)] = LoadTexture("../data/textures/doors.png");

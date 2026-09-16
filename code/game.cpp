@@ -917,7 +917,7 @@ namespace Game
         {
             gameState.tileMap.tiles = level4;
 
-            AddPlayer(gameState, { 7, 13 });
+            AddPlayer(gameState, { 7, 12 });
 
             // top room
             AddBlock(gameState, BlockKind::Default, { 4, 4 });
