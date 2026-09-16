@@ -6,7 +6,10 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
+
+//=================================================================
+// NOTE:: Utility
+//=================================================================
 
 void PlaySoundRandomisedPitch(Sound sound)
 {
@@ -64,6 +67,10 @@ F32 GetDeterministicRotation(IVector2 gridPosition)
 
     return static_cast<F32>(hash % 4) * 90.0f;
 }
+
+//=================================================================
+// NOTE:: Tilemap & Autotiling
+//=================================================================
 
 void DrawRotatedTile(Texture texture, Rectangle sourceRec, Vector2 position, F32 tileSize, F32 rotationDegrees)
 {
@@ -341,7 +348,7 @@ void DrawMenu()
     const F32 fontSize { static_cast<F32>(Assets::font.baseSize) * 0.5f };
     const F32 screenCenterX { static_cast<F32>(g_RenderTextureWidth) * 0.5f };
 
-    // Title
+    // NOTE:: Title
     {
         Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
         F32 w { static_cast<F32>(title.width) };
@@ -369,7 +376,7 @@ void DrawMenu()
     F32 iconColumnX { screenCenterX - (totalMenuWidth * 0.5f) };
     F32 textColumnX { iconColumnX + maxIconWidth + iconTextGap };
 
-    // WASD Keys
+    // NOTE:: WASD Keys
     {
         F32 iconW { static_cast<F32>(wasdIcon.width) * iconScale };
         F32 iconH { static_cast<F32>(wasdIcon.height) * iconScale };
@@ -380,7 +387,7 @@ void DrawMenu()
         DrawTextEx(Assets::font, wasdText, { textColumnX, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
     }
 
-    // Space Key
+    // NOTE:: Space Key
     {
         F32 iconW { static_cast<F32>(spaceIcon.width) * iconScale };
         F32 iconH { static_cast<F32>(spaceIcon.height) * iconScale };
@@ -391,7 +398,7 @@ void DrawMenu()
         DrawTextEx(Assets::font, spaceText, { textColumnX, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
     }
 
-    // Reset Key
+    // NOTE:: Reset Key
     {
         F32 iconW { static_cast<F32>(resetIcon.width) * iconScale };
         F32 iconH { static_cast<F32>(resetIcon.height) * iconScale };
@@ -404,7 +411,7 @@ void DrawMenu()
 }
 
 //=================================================================
-// NOTE:: Game
+// NOTE:: Entity
 //=================================================================
 
 Entity* EntityFromHandle(GameState& gameState, EntityHandle handle)
@@ -615,6 +622,10 @@ void AddDoor(GameState& gameState, IVector2 gridPosition)
     gameState.entities[handle.index] = entity;
 }
 
+//=================================================================
+// NOTE:: Movement & Grid Collision
+//=================================================================
+
 B32 IsGridMovePossible(const GameState& gameState, Entity& entity, IVector2 targetGridPosition)
 {
     B32 result { false };
@@ -711,6 +722,10 @@ void UpdateEntityMovement(Entity& entity, F32 dt)
     }
 }
 
+//=================================================================
+// NOTE:: Animation
+//=================================================================
+
 void UpdateAnimation(GameState& gameState, EntityHandle entityHandle, B32 playAnimation)
 {
     Entity* entity { EntityFromHandle(gameState, entityHandle) };
@@ -729,6 +744,10 @@ void UpdateAnimation(GameState& gameState, EntityHandle entityHandle, B32 playAn
         }
     }
 }
+
+//=================================================================
+// NOTE:: Draw
+//=================================================================
 
 void DrawEntity(const Entity& entity)
 {
@@ -756,7 +775,7 @@ void DrawGame(GameState& gameState)
         const F32 screenW { static_cast<F32>(g_RenderTextureWidth) };
         const F32 centerY { static_cast<F32>(g_RenderTextureHeight) * 0.5f };
 
-        // WASD Keys
+        // NOTE:: WASD Keys
         {
             Texture icon { Assets::GetSpriteSheet(SpriteId::WASD) };
             const char* text { "TO MOVE" };
@@ -769,7 +788,7 @@ void DrawGame(GameState& gameState)
             DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
         }
 
-        // Space Key
+        // NOTE:: Space Key
         {
             Texture icon { Assets::GetSpriteSheet(SpriteId::SpaceKey) };
             const char* text { "TO PUSH" };
@@ -784,7 +803,7 @@ void DrawGame(GameState& gameState)
             DrawTextEx(Assets::font, text, { rowX + iconW + iconTextGap, rowY + (iconH - fontSize) * 0.5f }, fontSize, 1.0f, WHITE);
         }
 
-        // R Key
+        // NOTE:: R Key
         {
             Texture icon { Assets::GetSpriteSheet(SpriteId::RKey) };
             const char* text { "TO RESET" };
@@ -826,7 +845,6 @@ void DrawGame(GameState& gameState)
 
 void DrawVictory()
 {
-    // Title
     {
         Texture title { Assets::GetSpriteSheet(SpriteId::Title) };
         F32 w { static_cast<F32>(title.width) };
@@ -853,6 +871,10 @@ void DrawVictory()
 
     DrawTextEx(Assets::font, me, { centreX - (meTextDimensions.x / 2), startY + thanksTextDimensions.y + spaceBetween }, fontSize, 1.0f, WHITE);
 }
+
+//=================================================================
+// NOTE:: Game
+//=================================================================
 
 namespace Game
 {
@@ -919,14 +941,14 @@ namespace Game
 
             AddPlayer(gameState, { 7, 12 });
 
-            // top room
+            // NOTE:: Top room
             AddBlock(gameState, BlockKind::Default, { 4, 4 });
             AddEnemy(gameState, { 5, 4 });
             AddBlock(gameState, BlockKind::Ice, { 6, 9 });
             AddEnemy(gameState, { 11, 3 });
             AddDoor(gameState, { 11, 1 });
 
-            // bottom room
+            // NOTE:: Bottom room
             AddBlock(gameState, BlockKind::Default, { 12, 9 });
             AddBlock(gameState, BlockKind::Default, { 5, 12 });
             AddBlock(gameState, BlockKind::Default, { 10, 12 });
@@ -1015,7 +1037,7 @@ namespace Game
                     }
                     else
                     {
-                        // Block gets crushed
+                        // NOTE:: Path for crushing a block
                         if (target->blockKind == BlockKind::Default)
                         {
                             AddEffect(gameState, SpriteId::BlockCrushEffect, target->position, 4, 4);
@@ -1159,10 +1181,11 @@ namespace Game
                     if (gameState.tick % entity.animation.frameAdvancement == 0)
                     {
                         entity.animation.currentFrame++;
-                        // Despawn after playing all frames once
+                        // NOTE:: Despawn after playing all frames once
                         if (entity.animation.currentFrame >= entity.animation.frameCount)
                         {
-                            entity.kind = EntityKind::None; // Free the slot
+                            // NOTE:: Free the slot
+                            entity.kind = EntityKind::None;
                         }
                     }
                 }
@@ -1257,7 +1280,7 @@ namespace Game
         // NOTE:: Render to the main buffer
         BeginDrawing();
         ClearBackground(BLACK);
-        // draw render texture scaled
+        // NOTE:: Draw render texture scaled
         {
             F32 screenWidth { static_cast<F32>(GetScreenWidth()) };
             F32 screenHeight { static_cast<F32>(GetScreenHeight()) };
